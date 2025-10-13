@@ -2,7 +2,7 @@ name: digital_life_care_app
 description: "A new Flutter project."
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+publish_to: "none" # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -35,26 +35,29 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
-  provider: ^6.1.2  # State management (MVVM)
-  go_router: ^14.2.6  # Navigation
-  google_fonts: ^6.2.1  # Fonts
-  shared_preferences: ^2.3.2  # Local storage
-  hive: ^2.2.3  # Offline caching
-  hive_flutter: ^1.1.0  # Hive init
-  image_picker: ^1.1.2  # Profile photo
-  flutter_colorpicker: ^1.1.0  # Theme color
-  geolocator: ^12.0.0  # GPS (later)
-  dio: ^5.7.0  # HTTP (API stubs)
-  flutter_local_notifications: ^17.2.3  # Reminders
-  google_maps_flutter: ^2.7.0  # Locator
-  qr_flutter: ^4.1.0  # QR codes
-  fl_chart: ^0.69.0  # Analytics
-  share_plus: ^12.0.0  # Sharing
-  flutter_image_compress: ^2.3.0  # Photo compress
-  carousel_slider: ^5.1.1  # Onboarding
-  table_calendar: ^3.1.2  # Booking
-  timelines: ^0.1.0  # Reminders timeline
-  crypto: ^3.0.5  # Encryption stubs
+  provider: ^6.1.2 # State management (MVVM)
+  go_router: ^14.2.6 # Navigation
+  google_fonts: ^6.2.1 # Fonts
+  shared_preferences: ^2.3.2 # Local storage
+  hive: ^2.2.3 # Offline caching
+  hive_flutter: ^1.1.0 # Hive init
+  image_picker: ^1.1.2 # Profile photo
+  flutter_colorpicker: ^1.1.0 # Theme color
+  geolocator: ^12.0.0 # GPS (later)
+  dio: ^5.7.0 # HTTP (API stubs)
+  flutter_local_notifications: ^17.2.3 # Reminders
+  flutter_native_timezone: ^2.0.0
+  timezone: ^0.9.4
+  uuid: ^3.0.7
+  google_maps_flutter: ^2.7.0 # Locator
+  qr_flutter: ^4.1.0 # QR codes
+  fl_chart: ^0.69.0 # Analytics
+  share_plus: ^12.0.0 # Sharing
+  flutter_image_compress: ^2.3.0 # Photo compress
+  carousel_slider: ^5.1.1 # Onboarding
+  table_calendar: ^3.1.2 # Booking
+  timelines: ^0.1.0 # Reminders timeline
+  crypto: ^3.0.5 # Encryption stubs
 
 dev_dependencies:
   flutter_test:
@@ -72,7 +75,6 @@ dev_dependencies:
 
 # The following section is specific to Flutter packages.
 flutter:
-
   # The following line ensures that the Material Icons font is
   # included with your application, so that you can use the icons in
   # the material Icons class.

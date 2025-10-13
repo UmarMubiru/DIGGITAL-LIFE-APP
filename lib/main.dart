@@ -1,6 +1,7 @@
 import 'package:digital_life_care_app/providers/auth_provider.dart';
 import 'package:digital_life_care_app/providers/awareness_provider.dart';
 import 'package:digital_life_care_app/providers/user_provider.dart';
+import 'package:digital_life_care_app/providers/reminder_provider.dart';
 import 'package:digital_life_care_app/screens/awareness/awareness_detail_screen.dart';
 import 'package:digital_life_care_app/screens/awareness/awareness_home_screen.dart';
 import 'package:digital_life_care_app/screens/auth/login_screen.dart';
@@ -9,6 +10,8 @@ import 'package:digital_life_care_app/screens/onboarding_screen.dart';
 import 'package:digital_life_care_app/screens/home_shell.dart';
 import 'package:digital_life_care_app/screens/profile_screen.dart';
 import 'package:digital_life_care_app/screens/splash_screen.dart';
+import 'package:digital_life_care_app/screens/booking.dart';
+import 'package:digital_life_care_app/screens/reminder.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -26,6 +29,7 @@ class RootApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => AuthProvider()..initialize()),
         ChangeNotifierProvider(create: (_) => UserProvider()..initialize()),
         ChangeNotifierProvider(create: (_) => AwarenessProvider()),
+        ChangeNotifierProvider(create: (_) => ReminderProvider()..initialize()),
       ],
       child: Consumer<UserProvider>(
         builder: (context, user, _) => MaterialApp(
@@ -33,15 +37,20 @@ class RootApp extends StatelessWidget {
           theme: ThemeData(
             useMaterial3: true,
             // Base color scheme with explicit overrides for surfaces/buttons
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-              brightness: user.isDark ? Brightness.dark : Brightness.light,
-            ).copyWith(
-              surface: user.isDark ? const Color(0xFF263238) : const Color(0xFFF2F2F2),
-              primary: const Color(0xFF1976D2), // normal blue for buttons
-              onPrimary: Colors.white,
-            ),
-            scaffoldBackgroundColor: user.isDark ? const Color(0xFF0D47A1) : const Color(0xFFB3E5FC),
+            colorScheme:
+                ColorScheme.fromSeed(
+                  seedColor: Colors.blue,
+                  brightness: user.isDark ? Brightness.dark : Brightness.light,
+                ).copyWith(
+                  surface: user.isDark
+                      ? const Color(0xFF263238)
+                      : const Color(0xFFF2F2F2),
+                  primary: const Color(0xFF1976D2), // normal blue for buttons
+                  onPrimary: Colors.white,
+                ),
+            scaffoldBackgroundColor: user.isDark
+                ? const Color(0xFF0D47A1)
+                : const Color(0xFFB3E5FC),
             cardTheme: const CardThemeData(
               color: Color(0xFFF2F2F2), // greyish cards
               margin: EdgeInsets.all(12),
@@ -58,7 +67,9 @@ class RootApp extends StatelessWidget {
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: const Color(0xFF1976D2), // links like Forgot Password
+                foregroundColor: const Color(
+                  0xFF1976D2,
+                ), // links like Forgot Password
               ),
             ),
             navigationBarTheme: NavigationBarThemeData(
@@ -66,8 +77,12 @@ class RootApp extends StatelessWidget {
               indicatorColor: const Color(0xFF2E7D32),
               surfaceTintColor: Colors.transparent,
               labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-              labelTextStyle: WidgetStateProperty.all(const TextStyle(color: Colors.white)),
-              iconTheme: WidgetStateProperty.all(const IconThemeData(color: Colors.white)),
+              labelTextStyle: WidgetStateProperty.all(
+                const TextStyle(color: Colors.white),
+              ),
+              iconTheme: WidgetStateProperty.all(
+                const IconThemeData(color: Colors.white),
+              ),
             ),
             appBarTheme: const AppBarTheme(
               backgroundColor: Colors.transparent,
@@ -84,6 +99,8 @@ class RootApp extends StatelessWidget {
             '/profile': (_) => const ProfileScreen(),
             '/dashboard': (_) => const HomeShell(),
             '/awareness': (_) => const AwarenessHomeScreen(),
+            '/booking': (_) => const BookingScreen(),
+            '/reminder': (_) => const ReminderScreen(),
           },
           onGenerateRoute: (settings) {
             if (settings.name == '/awareness/detail') {

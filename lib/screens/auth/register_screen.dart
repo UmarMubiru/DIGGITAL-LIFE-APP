@@ -41,19 +41,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
               TextFormField(
                 controller: _emailCtrl,
                 decoration: const InputDecoration(labelText: 'Email'),
-                validator: (v) => (v == null || !v.contains('@')) ? 'Enter a valid email' : null,
+                validator: (v) => (v == null || !v.contains('@'))
+                    ? 'Enter a valid email'
+                    : null,
               ),
               TextFormField(
                 controller: _passwordCtrl,
                 decoration: const InputDecoration(labelText: 'Password'),
                 obscureText: true,
-                validator: (v) => (v == null || v.length < 6) ? 'Min 6 characters' : null,
+                validator: (v) =>
+                    (v == null || v.length < 6) ? 'Min 6 characters' : null,
               ),
               TextFormField(
                 controller: _confirmCtrl,
-                decoration: const InputDecoration(labelText: 'Confirm Password'),
+                decoration: const InputDecoration(
+                  labelText: 'Confirm Password',
+                ),
                 obscureText: true,
-                validator: (v) => v != _passwordCtrl.text ? 'Passwords do not match' : null,
+                validator: (v) =>
+                    v != _passwordCtrl.text ? 'Passwords do not match' : null,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -61,7 +67,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 onChanged: (v) => setState(() => _role = v ?? 'student'),
                 items: const [
                   DropdownMenuItem(value: 'student', child: Text('Student')),
-                  DropdownMenuItem(value: 'worker', child: Text('Health Worker')),
+                  DropdownMenuItem(
+                    value: 'worker',
+                    child: Text('Health Worker'),
+                  ),
                 ],
                 decoration: const InputDecoration(labelText: 'Role'),
               ),
@@ -71,27 +80,33 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 child: ElevatedButton(
                   onPressed: () async {
                     if (!_formKey.currentState!.validate()) return;
+                    final messenger = ScaffoldMessenger.of(context);
+                    final navigator = Navigator.of(context);
                     final err = await context.read<AuthProvider>().register(
-                          email: _emailCtrl.text.trim(),
-                          password: _passwordCtrl.text,
-                          role: _role,
-                        );
+                      email: _emailCtrl.text.trim(),
+                      password: _passwordCtrl.text,
+                      role: _role,
+                    );
                     if (err != null) {
-                      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(err)));
+                      if (!mounted) return;
+                      messenger.showSnackBar(SnackBar(content: Text(err)));
                       return;
                     }
                     if (!mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Registration successful')));
-                    Navigator.of(context).pushReplacementNamed('/dashboard');
+                    messenger.showSnackBar(
+                      const SnackBar(content: Text('Registration successful')),
+                    );
+                    navigator.pushReplacementNamed('/dashboard');
                   },
                   child: const Text('Create Account'),
                 ),
               ),
               const SizedBox(height: 8),
               TextButton(
-                onPressed: () => Navigator.of(context).pushReplacementNamed('/login'),
+                onPressed: () =>
+                    Navigator.of(context).pushReplacementNamed('/login'),
                 child: const Text('Have an account? Login'),
-              )
+              ),
             ],
           ),
         ),
@@ -99,5 +114,3 @@ class _RegisterScreenState extends State<RegisterScreen> {
     );
   }
 }
-
-

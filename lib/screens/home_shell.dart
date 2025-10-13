@@ -1,6 +1,8 @@
 import 'package:digital_life_care_app/screens/awareness/awareness_home_screen.dart';
 import 'package:digital_life_care_app/screens/dashboard_screen.dart';
 import 'package:digital_life_care_app/screens/profile_screen.dart';
+import 'package:digital_life_care_app/screens/booking.dart';
+import 'package:digital_life_care_app/screens/reminder.dart';
 import 'package:flutter/material.dart';
 
 class HomeShell extends StatefulWidget {
@@ -17,8 +19,8 @@ class _HomeShellState extends State<HomeShell> {
   final List<Widget> _pages = const [
     DashboardScreen(),
     AwarenessHomeScreen(),
-    Placeholder(), // Booking (UI later)
-    Placeholder(), // Reminders (UI later)
+    BookingScreen(),
+    ReminderScreen(),
     ProfileScreen(),
   ];
 
@@ -44,15 +46,33 @@ class _HomeShellState extends State<HomeShell> {
           _controller.jumpToPage(i);
         },
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Home'),
-          NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Awareness'),
-          NavigationDestination(icon: Icon(Icons.calendar_month_outlined), selectedIcon: Icon(Icons.calendar_month), label: 'Booking'),
-          NavigationDestination(icon: Icon(Icons.alarm_outlined), selectedIcon: Icon(Icons.alarm), label: 'Reminders'),
-          NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.menu_book_outlined),
+            selectedIcon: Icon(Icons.menu_book),
+            label: 'Awareness',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.calendar_month_outlined),
+            selectedIcon: Icon(Icons.calendar_month),
+            label: 'Booking',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.alarm_outlined),
+            selectedIcon: Icon(Icons.alarm),
+            label: 'Reminders',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
         ],
       ),
     );
   }
 }
-
-

@@ -16,7 +16,15 @@ class _AwarenessDetailScreenState extends State<AwarenessDetailScreen> {
   Widget build(BuildContext context) {
     final topic = ModalRoute.of(context)!.settings.arguments as AwarenessTopic;
     return Scaffold(
-      appBar: AppBar(title: Text(topic.title), actions: const [Padding(padding: EdgeInsets.only(right: 12.0), child: AppBrand.compact(logoSize: 28))]),
+      appBar: AppBar(
+        title: Text(topic.title),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 12.0),
+            child: AppBrand.compact(logoSize: 28),
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -24,8 +32,18 @@ class _AwarenessDetailScreenState extends State<AwarenessDetailScreen> {
           children: [
             Text(topic.content),
             const SizedBox(height: 16),
-            ExpansionTile(title: const Text('Symptoms'), children: topic.symptoms.map((e) => ListTile(title: Text(e))).toList()),
-            ExpansionTile(title: const Text('Common Myths'), children: topic.myths.map((e) => ListTile(title: Text(e))).toList()),
+            ExpansionTile(
+              title: const Text('Symptoms'),
+              children: topic.symptoms
+                  .map((e) => ListTile(title: Text(e)))
+                  .toList(),
+            ),
+            ExpansionTile(
+              title: const Text('Common Myths'),
+              children: topic.myths
+                  .map((e) => ListTile(title: Text(e)))
+                  .toList(),
+            ),
             const SizedBox(height: 16),
             ElevatedButton(
               onPressed: () async {
@@ -34,37 +52,58 @@ class _AwarenessDetailScreenState extends State<AwarenessDetailScreen> {
                   builder: (ctx) {
                     int localScore = 0;
                     int selected = -1;
-                    return StatefulBuilder(builder: (ctx, setState) {
-                      return AlertDialog(
-                        title: const Text('Quick Quiz'),
-                        content: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Text('HIV can be transmitted through casual contact?'),
-                            RadioListTile<int>(value: 0, groupValue: selected, onChanged: (v) => setState(() => selected = v!), title: const Text('True')),
-                            RadioListTile<int>(value: 1, groupValue: selected, onChanged: (v) => setState(() => selected = v!), title: const Text('False')),
+                    return StatefulBuilder(
+                      builder: (ctx, setState) {
+                        return AlertDialog(
+                          title: const Text('Quick Quiz'),
+                          content: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Text(
+                                'HIV can be transmitted through casual contact?',
+                              ),
+                              RadioListTile<int>(
+                                value: 0,
+                                groupValue: selected,
+                                onChanged: (v) => setState(() => selected = v!),
+                                title: const Text('True'),
+                              ),
+                              RadioListTile<int>(
+                                value: 1,
+                                groupValue: selected,
+                                onChanged: (v) => setState(() => selected = v!),
+                                title: const Text('False'),
+                              ),
+                            ],
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(ctx),
+                              child: const Text('Cancel'),
+                            ),
+                            ElevatedButton(
+                              onPressed: selected == -1
+                                  ? null
+                                  : () {
+                                      if (selected == 1)
+                                        localScore = 1; // correct
+                                      Navigator.pop(ctx, localScore);
+                                    },
+                              child: const Text('Submit'),
+                            ),
                           ],
-                        ),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancel')),
-                          ElevatedButton(
-                            onPressed: selected == -1
-                                ? null
-                                : () {
-                                    if (selected == 1) localScore = 1; // correct
-                                    Navigator.pop(ctx, localScore);
-                                  },
-                            child: const Text('Submit'),
-                          )
-                        ],
-                      );
-                    });
+                        );
+                      },
+                    );
                   },
                 );
                 if (result != null) {
-                  setState(() => _score = result);
                   if (!mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Score: $_score/1')));
+                  setState(() => _score = result);
+                  final messenger = ScaffoldMessenger.of(context);
+                  messenger.showSnackBar(
+                    SnackBar(content: Text('Score: $_score/1')),
+                  );
                 }
               },
               child: const Text('Take Quiz'),
@@ -75,5 +114,3 @@ class _AwarenessDetailScreenState extends State<AwarenessDetailScreen> {
     );
   }
 }
-
-
