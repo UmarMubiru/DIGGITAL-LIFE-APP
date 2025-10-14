@@ -11,7 +11,8 @@ class ReminderScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reminders!!'),
+        title: const Text('Reminders'),
+        backgroundColor: Colors.blue,
         actions: [
           IconButton(
             onPressed: () => _showAddDialog(context),
@@ -54,6 +55,7 @@ class ReminderScreen extends StatelessWidget {
   }
 
   Future<void> _showAddDialog(BuildContext context) async {
+    //waits for an action
     final titleCtrl = TextEditingController();
     DateTime selectedDate = DateTime.now();
     TimeOfDay selectedTime = TimeOfDay.now();

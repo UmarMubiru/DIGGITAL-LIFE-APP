@@ -1,4 +1,3 @@
-
 import 'package:digital_life_care_app/providers/user_provider.dart';
 import 'package:digital_life_care_app/widgets/app_brand.dart';
 import 'package:flutter/material.dart';
@@ -11,15 +10,35 @@ class DashboardScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final user = context.watch<UserProvider>();
     return Scaffold(
-      appBar: AppBar(title: const Text('Dashboard'), actions: const [Padding(padding: EdgeInsets.only(right: 12.0), child: AppBrand.compact(logoSize: 28))]),
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(right: 12.0),
+            child: AppBrand.compact(logoSize: 28),
+          ),
+          IconButton(onPressed: () {}, icon: Icon(Icons.person)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.add_shopping_cart)),
+        ],
+      ),
       body: GridView.count(
         crossAxisCount: 2,
         padding: const EdgeInsets.all(16),
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
         children: [
-          _tile(context, Icons.person, 'Profile', () => Navigator.pushNamed(context, '/profile')),
-          _tile(context, Icons.menu_book, 'Awareness', () => Navigator.pushNamed(context, '/awareness')),
+          _tile(
+            context,
+            Icons.person,
+            'Profile',
+            () => Navigator.pushNamed(context, '/profile'),
+          ),
+          _tile(
+            context,
+            Icons.menu_book,
+            'Awareness',
+            () => Navigator.pushNamed(context, '/awareness'),
+          ),
           _tile(context, Icons.calendar_month, 'Booking', () {}),
           _tile(context, Icons.alarm, 'Reminders', () {}),
           _tile(context, Icons.chat, 'Chat', () {}),
@@ -31,7 +50,12 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 
-  Widget _tile(BuildContext context, IconData icon, String label, VoidCallback onTap) {
+  Widget _tile(
+    BuildContext context,
+    IconData icon,
+    String label,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       child: Card(
@@ -49,5 +73,3 @@ class DashboardScreen extends StatelessWidget {
     );
   }
 }
-
-

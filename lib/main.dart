@@ -34,6 +34,7 @@ class RootApp extends StatelessWidget {
       child: Consumer<UserProvider>(
         builder: (context, user, _) => MaterialApp(
           title: 'Digital Life Care',
+          debugShowCheckedModeBanner: false,
           theme: ThemeData(
             useMaterial3: true,
             // Base color scheme with explicit overrides for surfaces/buttons
