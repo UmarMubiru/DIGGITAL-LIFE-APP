@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import 'package:intl/intl.dart'; // added for better date formatting
 
 import 'package:digital_life_care_app/providers/reminder_provider.dart';
+import 'package:digital_life_care_app/widgets/app_brand.dart';
 
 class ReminderScreen extends StatelessWidget {
   const ReminderScreen({super.key});
@@ -13,12 +14,14 @@ class ReminderScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Reminders'),
-        backgroundColor: Colors.blue,
         actions: [
-          IconButton(
-            onPressed: () => _showAddDialog(context),
-            icon: const Icon(Icons.add),
+          Padding(
+            padding: EdgeInsets.only(right: 12.0),
+            child: AppBrand.compact(logoSize: 28),
           ),
+          IconButton(onPressed: () {}, icon: Icon(Icons.person)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.add_shopping_cart)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.location_on)),
         ],
       ),
       body: Consumer<ReminderProvider>(

@@ -19,6 +19,7 @@ class DashboardScreen extends StatelessWidget {
           ),
           IconButton(onPressed: () {}, icon: Icon(Icons.person)),
           IconButton(onPressed: () {}, icon: Icon(Icons.add_shopping_cart)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.location_on)),
         ],
       ),
       body: GridView.count(

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:digital_life_care_app/widgets/app_brand.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -82,7 +83,18 @@ class _BookingScreenState extends State<BookingScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Book an Appointment')),
+      appBar: AppBar(
+        title: const Text('Book an Appointment'),
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(right: 12.0),
+            child: AppBrand.compact(logoSize: 28),
+          ),
+          IconButton(onPressed: () {}, icon: Icon(Icons.person)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.add_shopping_cart)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.location_on)),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12.0),
         child: Column(

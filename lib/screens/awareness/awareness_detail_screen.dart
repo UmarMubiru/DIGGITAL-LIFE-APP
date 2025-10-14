@@ -18,11 +18,14 @@ class _AwarenessDetailScreenState extends State<AwarenessDetailScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text(topic.title),
-        actions: const [
+        actions: [
           Padding(
             padding: EdgeInsets.only(right: 12.0),
             child: AppBrand.compact(logoSize: 28),
           ),
+          IconButton(onPressed: () {}, icon: Icon(Icons.person)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.add_shopping_cart)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.location_on)),
         ],
       ),
       body: SingleChildScrollView(

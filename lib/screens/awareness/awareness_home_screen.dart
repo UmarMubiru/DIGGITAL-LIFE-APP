@@ -9,13 +9,27 @@ class AwarenessHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Awareness'), actions: const [Padding(padding: EdgeInsets.only(right: 12.0), child: AppBrand.compact(logoSize: 28))]),
+      appBar: AppBar(
+        title: const Text('Awareness'),
+        actions: [
+          Padding(
+            padding: EdgeInsets.only(right: 12.0),
+            child: AppBrand.compact(logoSize: 28),
+          ),
+          IconButton(onPressed: () {}, icon: Icon(Icons.person)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.add_shopping_cart)),
+          IconButton(onPressed: () {}, icon: Icon(Icons.location_on)),
+        ],
+      ),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.all(12.0),
             child: TextField(
-              decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search topics'),
+              decoration: const InputDecoration(
+                prefixIcon: Icon(Icons.search),
+                hintText: 'Search topics',
+              ),
               onChanged: (v) => context.read<AwarenessProvider>().setQuery(v),
             ),
           ),
@@ -33,16 +47,27 @@ class AwarenessHomeScreen extends StatelessWidget {
                 itemBuilder: (context, index) {
                   final t = provider.topics[index];
                   return InkWell(
-                    onTap: () => Navigator.of(context).pushNamed('/awareness/detail', arguments: t),
+                    onTap: () => Navigator.of(
+                      context,
+                    ).pushNamed('/awareness/detail', arguments: t),
                     child: Card(
                       child: Padding(
                         padding: const EdgeInsets.all(12.0),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(t.title, style: Theme.of(context).textTheme.titleMedium),
+                            Text(
+                              t.title,
+                              style: Theme.of(context).textTheme.titleMedium,
+                            ),
                             const SizedBox(height: 8),
-                            Expanded(child: Text(t.content, maxLines: 3, overflow: TextOverflow.ellipsis)),
+                            Expanded(
+                              child: Text(
+                                t.content,
+                                maxLines: 3,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -51,11 +76,9 @@ class AwarenessHomeScreen extends StatelessWidget {
                 },
               ),
             ),
-          )
+          ),
         ],
       ),
     );
   }
 }
-
-
