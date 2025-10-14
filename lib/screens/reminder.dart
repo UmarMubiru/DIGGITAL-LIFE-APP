@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
+import 'package:intl/intl.dart'; // added for better date formatting
 
 import 'package:digital_life_care_app/providers/reminder_provider.dart';
 
@@ -24,21 +25,50 @@ class ReminderScreen extends StatelessWidget {
         builder: (context, provider, _) {
           final items = provider.items;
           if (items.isEmpty) {
-            return const Center(
-              child: Text('No reminders yet. Tap + to add one'),
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.notifications_none,
+                    size: 80,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'No reminders yet.\nTap + to add one',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 16, color: Colors.grey.shade600),
+                  ),
+                ],
+              ),
             );
           }
+
           return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: items.length,
             itemBuilder: (context, i) {
               final r = items[i];
+              final formattedDate = DateFormat(
+                'MMM d, yyyy – h:mm a',
+              ).format(r.dateTime);
+
               return Card(
+                margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 3,
                 child: ListTile(
-                  title: Text(r.title),
-                  subtitle: Text('${r.dateTime.toLocal()}'.split('.').first),
+                  leading: const Icon(Icons.alarm, color: Colors.blue),
+                  title: Text(
+                    r.title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: Text(formattedDate),
                   trailing: IconButton(
-                    icon: const Icon(Icons.delete_outline),
+                    icon: const Icon(Icons.delete_outline, color: Colors.red),
                     onPressed: () => provider.remove(r.id),
                   ),
                 ),
@@ -49,13 +79,13 @@ class ReminderScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _showAddDialog(context),
+        backgroundColor: Colors.blue,
         child: const Icon(Icons.add),
       ),
     );
   }
 
   Future<void> _showAddDialog(BuildContext context) async {
-    //waits for an action
     final titleCtrl = TextEditingController();
     DateTime selectedDate = DateTime.now();
     TimeOfDay selectedTime = TimeOfDay.now();
@@ -65,19 +95,25 @@ class ReminderScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (ctx, setState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(15),
+          ),
           title: const Text('Add Reminder'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: titleCtrl,
-                decoration: const InputDecoration(labelText: 'Title'),
+                decoration: const InputDecoration(
+                  labelText: 'Title',
+                  prefixIcon: Icon(Icons.title),
+                ),
               ),
               const SizedBox(height: 16),
               ListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('Date'),
-                subtitle: Text('${selectedDate.toLocal()}'.split(' ')[0]),
+                subtitle: Text(DateFormat('y-MM-dd').format(selectedDate)),
                 trailing: const Icon(Icons.calendar_today),
                 onTap: () async {
                   final d = await showDatePicker(
@@ -86,9 +122,7 @@ class ReminderScreen extends StatelessWidget {
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                   );
-                  if (d != null) {
-                    setState(() => selectedDate = d);
-                  }
+                  if (d != null) setState(() => selectedDate = d);
                 },
               ),
               ListTile(
@@ -101,15 +135,19 @@ class ReminderScreen extends StatelessWidget {
                     context: ctx,
                     initialTime: selectedTime,
                   );
-                  if (t != null) {
-                    setState(() => selectedTime = t);
-                  }
+                  if (t != null) setState(() => selectedTime = t);
                 },
               ),
             ],
           ),
           actions: [
             ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
               onPressed: () {
                 final title = titleCtrl.text.trim();
                 if (title.isEmpty) return;

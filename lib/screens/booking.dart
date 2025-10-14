@@ -13,7 +13,7 @@ class _BookingScreenState extends State<BookingScreen> {
   DateTime? _selectedDate;
   String? _selectedSlot;
 
-  // Example time slots (could be generated or fetched)
+  // Example time slots
   final List<String> _timeSlots = [
     '09:00 AM',
     '10:00 AM',
@@ -56,7 +56,6 @@ class _BookingScreenState extends State<BookingScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Booked $dateStr at $_selectedSlot')),
       );
-      // Reset selection (mock behavior)
       setState(() {
         _selectedSlot = null;
       });
@@ -72,7 +71,6 @@ class _BookingScreenState extends State<BookingScreen> {
 
   Future<void> _pickCustomTime() async {
     final initial = TimeOfDay.now();
-    // Capture messenger before awaiting if we might show snackbars later
     final picked = await showTimePicker(context: context, initialTime: initial);
     if (picked == null) return;
     if (!mounted) return;
@@ -85,139 +83,171 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Book an Appointment')),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(12.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Card(
               margin: const EdgeInsets.symmetric(vertical: 8),
+              elevation: 3,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(12.0),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Visible selected date indicator
                     Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8.0,
-                        vertical: 4.0,
+                        horizontal: 8,
+                        vertical: 4,
                       ),
                       child: Text(
                         'Selected: ${_selectedDate != null ? '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}' : 'None'}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16,
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    // Fixed-height calendar so it's visible on all layouts
-                    SizedBox(
-                      height: 300,
-                      child: TableCalendar(
-                        firstDay: DateTime.now().subtract(
-                          const Duration(days: 365),
-                        ),
-                        lastDay: DateTime.now().add(const Duration(days: 365)),
-                        focusedDay: _focused,
-                        selectedDayPredicate: (day) =>
-                            isSameDay(_selectedDate, day),
-                        onDaySelected: (selectedDay, focusedDay) {
-                          setState(() {
-                            _selectedDate = selectedDay;
-                            _focused = focusedDay;
-                            _selectedSlot =
-                                null; // clear slot when changing date
-                          });
-                        },
-                        headerStyle: const HeaderStyle(
-                          formatButtonVisible: false,
-                          titleCentered: true,
-                        ),
-                      ),
+                    const SizedBox(height: 8),
+                    LayoutBuilder(
+                      builder: (context, constraints) {
+                        return TableCalendar(
+                          firstDay: DateTime.now().subtract(
+                            const Duration(days: 365),
+                          ),
+                          lastDay: DateTime.now().add(
+                            const Duration(days: 365),
+                          ),
+                          focusedDay: _focused,
+                          selectedDayPredicate: (day) =>
+                              isSameDay(_selectedDate, day),
+                          onDaySelected: (selectedDay, focusedDay) {
+                            setState(() {
+                              _selectedDate = selectedDay;
+                              _focused = focusedDay;
+                              _selectedSlot = null;
+                            });
+                          },
+                          headerStyle: const HeaderStyle(
+                            formatButtonVisible: false,
+                            titleCentered: true,
+                          ),
+                          availableCalendarFormats: const {
+                            CalendarFormat.month: 'Month',
+                          },
+                          shouldFillViewport: false, // auto-size calendar
+                          daysOfWeekHeight: 36,
+                          daysOfWeekStyle: const DaysOfWeekStyle(
+                            weekdayStyle: TextStyle(fontSize: 14, height: 1.2),
+                            weekendStyle: TextStyle(fontSize: 14, height: 1.2),
+                          ),
+                          calendarStyle: const CalendarStyle(
+                            todayDecoration: BoxDecoration(
+                              color: Colors.blueAccent,
+                              shape: BoxShape.circle,
+                            ),
+                            selectedDecoration: BoxDecoration(
+                              color: Colors.deepPurple,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 12),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 4.0),
-              child: Text(
-                'Available time slots',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
+            const SizedBox(height: 16),
+            const Text(
+              'Available time slots',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 8),
-            Expanded(
-              child: GridView.builder(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  mainAxisExtent: 48,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                ),
-                itemCount: _timeSlots.length,
-                itemBuilder: (context, index) {
-                  final slot = _timeSlots[index];
-                  final selected = slot == _selectedSlot;
-                  return InkWell(
-                    onTap: () => setState(() => _selectedSlot = slot),
-                    child: Card(
-                      color: selected
-                          ? Theme.of(context).colorScheme.primary
-                          : null,
-                      child: Center(
-                        child: Text(
-                          slot,
-                          style: TextStyle(
-                            color: selected
-                                ? Theme.of(context).colorScheme.onPrimary
-                                : null,
-                            fontWeight: selected
-                                ? FontWeight.bold
-                                : FontWeight.normal,
-                          ),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              padding: const EdgeInsets.symmetric(horizontal: 4),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 3,
+                mainAxisExtent: 48,
+                crossAxisSpacing: 8,
+                mainAxisSpacing: 8,
+              ),
+              itemCount: _timeSlots.length,
+              itemBuilder: (context, index) {
+                final slot = _timeSlots[index];
+                final selected = slot == _selectedSlot;
+                return InkWell(
+                  onTap: () => setState(() => _selectedSlot = slot),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Card(
+                    color: selected
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: selected ? 4 : 1,
+                    child: Center(
+                      child: Text(
+                        slot,
+                        style: TextStyle(
+                          color: selected
+                              ? Theme.of(context).colorScheme.onPrimary
+                              : null,
+                          fontWeight: selected
+                              ? FontWeight.bold
+                              : FontWeight.normal,
                         ),
                       ),
                     ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 8),
-            // Show selected slot (either preset or custom)
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 4.0,
-                vertical: 6.0,
-              ),
-              child: Row(
-                children: [
-                  if (_selectedSlot != null)
-                    Chip(label: Text('Preferred: $_selectedSlot'))
-                  else
-                    const Text('No preferred time selected'),
-                  const Spacer(),
-                  TextButton.icon(
-                    onPressed: _pickCustomTime,
-                    icon: const Icon(Icons.access_time),
-                    label: const Text('Pick custom time'),
                   ),
-                ],
-              ),
+                );
+              },
             ),
+            const SizedBox(height: 12),
             Row(
               children: [
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: (_selectedDate != null && _selectedSlot != null)
-                        ? _confirmBooking
-                        : null,
-                    child: const Text('Confirm Booking'),
-                  ),
+                if (_selectedSlot != null)
+                  Chip(
+                    label: Text('Preferred: $_selectedSlot'),
+                    backgroundColor: Colors.deepPurple.shade100,
+                  )
+                else
+                  const Text('No preferred time selected'),
+                const Spacer(),
+                TextButton.icon(
+                  onPressed: _pickCustomTime,
+                  icon: const Icon(Icons.access_time),
+                  label: const Text('Pick custom time'),
                 ),
               ],
             ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: (_selectedDate != null && _selectedSlot != null)
+                    ? _confirmBooking
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text(
+                  'Confirm Booking',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
           ],
         ),
       ),
