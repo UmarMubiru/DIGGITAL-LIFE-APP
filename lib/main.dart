@@ -2,6 +2,8 @@ import 'package:digital_life_care_app/providers/auth_provider.dart';
 import 'package:digital_life_care_app/providers/awareness_provider.dart';
 import 'package:digital_life_care_app/providers/user_provider.dart';
 import 'package:digital_life_care_app/providers/reminder_provider.dart';
+import 'package:digital_life_care_app/providers/chat_provider.dart';
+import 'package:digital_life_care_app/providers/locator_provider.dart';  // Add this import
 import 'package:digital_life_care_app/screens/awareness/awareness_detail_screen.dart';
 import 'package:digital_life_care_app/screens/awareness/awareness_home_screen.dart';
 import 'package:digital_life_care_app/screens/auth/login_screen.dart';
@@ -12,6 +14,8 @@ import 'package:digital_life_care_app/screens/profile_screen.dart';
 import 'package:digital_life_care_app/screens/splash_screen.dart';
 import 'package:digital_life_care_app/screens/booking.dart';
 import 'package:digital_life_care_app/screens/reminder.dart';
+import 'package:digital_life_care_app/screens/chat/chat_home_screen.dart';
+import 'package:digital_life_care_app/screens/locator/locator_list_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -30,6 +34,8 @@ class RootApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => UserProvider()..initialize()),
         ChangeNotifierProvider(create: (_) => AwarenessProvider()),
         ChangeNotifierProvider(create: (_) => ReminderProvider()..initialize()),
+        ChangeNotifierProvider(create: (_) => ChatProvider()),
+        ChangeNotifierProvider(create: (_) => LocatorProvider()),  // Add this line
       ],
       child: Consumer<UserProvider>(
         builder: (context, user, _) => MaterialApp(
@@ -37,28 +43,27 @@ class RootApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: ThemeData(
             useMaterial3: true,
-            // Base color scheme with explicit overrides for surfaces/buttons
             colorScheme:
-                ColorScheme.fromSeed(
-                  seedColor: Colors.blue,
-                  brightness: user.isDark ? Brightness.dark : Brightness.light,
-                ).copyWith(
-                  surface: user.isDark
-                      ? const Color(0xFF263238)
-                      : const Color(0xFFF2F2F2),
-                  primary: const Color(0xFF1976D2), // normal blue for buttons
-                  onPrimary: Colors.white,
-                ),
+            ColorScheme.fromSeed(
+              seedColor: Colors.blue,
+              brightness: user.isDark ? Brightness.dark : Brightness.light,
+            ).copyWith(
+              surface: user.isDark
+                  ? const Color(0xFF263238)
+                  : const Color(0xFFF2F2F2),
+              primary: const Color(0xFF1976D2),
+              onPrimary: Colors.white,
+            ),
             scaffoldBackgroundColor: user.isDark
                 ? const Color(0xFF0D47A1)
                 : const Color(0xFFB3E5FC),
             cardTheme: const CardThemeData(
-              color: Color(0xFFF2F2F2), // greyish cards
+              color: Color(0xFFF2F2F2),
               margin: EdgeInsets.all(12),
             ),
             elevatedButtonTheme: ElevatedButtonThemeData(
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF1976D2), // blue buttons
+                backgroundColor: const Color(0xFF1976D2),
                 foregroundColor: Colors.white,
                 minimumSize: const Size.fromHeight(48),
                 shape: const RoundedRectangleBorder(
@@ -68,13 +73,11 @@ class RootApp extends StatelessWidget {
             ),
             textButtonTheme: TextButtonThemeData(
               style: TextButton.styleFrom(
-                foregroundColor: const Color(
-                  0xFF1976D2,
-                ), // links like Forgot Password
+                foregroundColor: const Color(0xFF1976D2),
               ),
             ),
             navigationBarTheme: NavigationBarThemeData(
-              backgroundColor: const Color(0xFF388E3C), // grass green
+              backgroundColor: const Color(0xFF388E3C),
               indicatorColor: const Color(0xFF2E7D32),
               surfaceTintColor: Colors.transparent,
               labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
@@ -102,6 +105,8 @@ class RootApp extends StatelessWidget {
             '/awareness': (_) => const AwarenessHomeScreen(),
             '/booking': (_) => const BookingScreen(),
             '/reminder': (_) => const ReminderScreen(),
+            '/chat': (_) => const ChatHomeScreen(),
+            '/locator': (_) => const LocatorListScreen(),
           },
           onGenerateRoute: (settings) {
             if (settings.name == '/awareness/detail') {

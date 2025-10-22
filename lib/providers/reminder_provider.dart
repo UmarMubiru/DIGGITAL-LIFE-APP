@@ -5,7 +5,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:flutter_native_timezone/flutter_native_timezone.dart'
-    as native_tz;
+as native_tz;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Reminder {
@@ -32,7 +32,7 @@ class ReminderProvider extends ChangeNotifier {
   static const _kKey = 'app.reminders';
   final List<Reminder> _items = [];
   final FlutterLocalNotificationsPlugin _notifications =
-      FlutterLocalNotificationsPlugin();
+  FlutterLocalNotificationsPlugin();
   bool _notificationsInitialized = false;
 
   List<Reminder> get items => List.unmodifiable(_items);
@@ -114,14 +114,14 @@ class ReminderProvider extends ChangeNotifier {
     );
     final dayBefore = scheduledOnDay.subtract(const Duration(days: 1));
 
-    final androidDetails = AndroidNotificationDetails(
+    const androidDetails = AndroidNotificationDetails(
       'reminder_channel',
       'Reminders',
       channelDescription: 'Notifications for scheduled reminders',
       importance: Importance.max,
       priority: Priority.high,
     );
-    final details = NotificationDetails(android: androidDetails);
+    const details = NotificationDetails(android: androidDetails);
 
     final now = DateTime.now();
     try {
@@ -132,10 +132,7 @@ class ReminderProvider extends ChangeNotifier {
           r.title,
           tz.TZDateTime.from(dayBefore, tz.local),
           details,
-          androidAllowWhileIdle: true,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: null,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         );
       }
     } catch (_) {
@@ -150,10 +147,7 @@ class ReminderProvider extends ChangeNotifier {
           r.title,
           tz.TZDateTime.from(scheduledOnDay, tz.local),
           details,
-          androidAllowWhileIdle: true,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: null,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         );
       }
     } catch (_) {

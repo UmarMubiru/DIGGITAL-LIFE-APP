@@ -36,28 +36,29 @@ dependencies:
   cupertino_icons: ^1.0.8
 
   provider: ^6.1.2 # State management (MVVM)
-  go_router: ^14.2.6 # Navigation
+  go_router: ^16.2.5 # Navigation
   google_fonts: ^6.2.1 # Fonts
   shared_preferences: ^2.3.2 # Local storage
   hive: ^2.2.3 # Offline caching
   hive_flutter: ^1.1.0 # Hive init
   image_picker: ^1.1.2 # Profile photo
   flutter_colorpicker: ^1.1.0 # Theme color
-  geolocator: ^12.0.0 # GPS (later)
+  geolocator: ^14.0.2 # GPS (later)
   dio: ^5.7.0 # HTTP (API stubs)
-  flutter_local_notifications: ^17.2.3 # Reminders
+  flutter_local_notifications: ^19.5.0 # Reminders
   flutter_native_timezone: ^2.0.0
-  timezone: ^0.9.4
-  uuid: ^3.0.7
+  timezone: ^0.10.1
+  uuid: ^4.5.1
   google_maps_flutter: ^2.7.0 # Locator
   qr_flutter: ^4.1.0 # QR codes
-  fl_chart: ^0.69.0 # Analytics
+  fl_chart: ^1.1.1 # Analytics
   share_plus: ^12.0.0 # Sharing
   flutter_image_compress: ^2.3.0 # Photo compress
   carousel_slider: ^5.1.1 # Onboarding
   table_calendar: ^3.1.2 # Booking
   timelines: ^0.1.0 # Reminders timeline
   crypto: ^3.0.5 # Encryption stubs
+  url_launcher: ^6.2.2
 
 dev_dependencies:
   flutter_test:
@@ -68,7 +69,7 @@ dev_dependencies:
   # activated in the `analysis_options.yaml` file located at the root of your
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
