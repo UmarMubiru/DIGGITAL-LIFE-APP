@@ -2,6 +2,8 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthProvider extends ChangeNotifier {
   static const _keyIsAuthenticated = 'auth_is_authenticated';
@@ -19,12 +21,14 @@ class AuthProvider extends ChangeNotifier {
   String get role => _role;
   bool get initialized => _initialized;
 
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   Future<void> initialize() async {
     final prefs = await SharedPreferences.getInstance();
     _isAuthenticated = prefs.getBool(_keyIsAuthenticated) ?? false;
     _email = prefs.getString(_keyEmail) ?? '';
     _role = prefs.getString(_keyRole) ?? 'student';
-    // default first launch true if not set
     if (!prefs.containsKey(_keyFirstLaunch)) {
       await prefs.setBool(_keyFirstLaunch, true);
     }
@@ -42,38 +46,90 @@ class AuthProvider extends ChangeNotifier {
     await prefs.setBool(_keyFirstLaunch, false);
   }
 
-  Future<String?> register({required String email, required String password, required String role}) async {
+  /// --- Firebase Register ---
+  Future<String?> register({
+    required String email,
+    required String password,
+    required String role,
+  }) async {
     if (!_isValidEmail(email)) return 'Invalid email format';
     if (password.length < 6) return 'Password must be at least 6 characters';
-    // Mock: pretend success with slight delay
-    await Future.delayed(const Duration(milliseconds: 400));
-    final prefs = await SharedPreferences.getInstance();
-    _isAuthenticated = true;
-    _email = email;
-    _role = role;
-    await prefs.setBool(_keyIsAuthenticated, true);
-    await prefs.setString(_keyEmail, email);
-    await prefs.setString(_keyRole, role);
-    notifyListeners();
-    return null;
+
+    try {
+      // Create Firebase Auth user
+      UserCredential userCredential =
+      await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      // Store extra info in Firestore
+      await _firestore
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .set({
+        'email': email,
+        'role': role,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      // Update local state + SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      _isAuthenticated = true;
+      _email = email;
+      _role = role;
+      await prefs.setBool(_keyIsAuthenticated, true);
+      await prefs.setString(_keyEmail, email);
+      await prefs.setString(_keyRole, role);
+      notifyListeners();
+
+      return null; // success
+    } on FirebaseAuthException catch (e) {
+      return e.message;
+    } catch (e) {
+      return 'Registration failed: $e';
+    }
   }
 
-  Future<String?> login({required String email, required String password}) async {
+  /// --- Firebase Login ---
+  Future<String?> login({
+    required String email,
+    required String password,
+  }) async {
     if (!_isValidEmail(email)) return 'Invalid email format';
     if (password.isEmpty) return 'Password required';
-    await Future.delayed(const Duration(milliseconds: 300));
-    final prefs = await SharedPreferences.getInstance();
-    _isAuthenticated = true;
-    _email = email;
-    // keep last role or default student
-    _role = prefs.getString(_keyRole) ?? 'student';
-    await prefs.setBool(_keyIsAuthenticated, true);
-    await prefs.setString(_keyEmail, email);
-    notifyListeners();
-    return null;
+
+    try {
+      UserCredential userCredential =
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+
+      // Fetch role from Firestore
+      final doc = await _firestore
+          .collection('users')
+          .doc(userCredential.user!.uid)
+          .get();
+      final fetchedRole = doc['role'] ?? 'student';
+
+      // Update local state + SharedPreferences
+      final prefs = await SharedPreferences.getInstance();
+      _isAuthenticated = true;
+      _email = email;
+      _role = fetchedRole;
+      await prefs.setBool(_keyIsAuthenticated, true);
+      await prefs.setString(_keyEmail, email);
+      await prefs.setString(_keyRole, fetchedRole);
+      notifyListeners();
+
+      return fetchedRole; // return role for routing
+    } on FirebaseAuthException catch (e) {
+      return 'error:${e.message}';
+    } catch (e) {
+      return 'error:Login failed: $e';
+    }
   }
 
   Future<void> logout() async {
+    await _auth.signOut();
     final prefs = await SharedPreferences.getInstance();
     _isAuthenticated = false;
     await prefs.setBool(_keyIsAuthenticated, false);
@@ -85,5 +141,3 @@ class AuthProvider extends ChangeNotifier {
     return emailRegex.hasMatch(email);
   }
 }
-
-

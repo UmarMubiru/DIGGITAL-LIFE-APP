@@ -50,7 +50,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 decoration: const InputDecoration(labelText: 'Password'),
                 obscureText: true,
                 validator: (v) =>
-                    (v == null || v.length < 6) ? 'Min 6 characters' : null,
+                (v == null || v.length < 6) ? 'Min 6 characters' : null,
               ),
               TextFormField(
                 controller: _confirmCtrl,
@@ -59,7 +59,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 obscureText: true,
                 validator: (v) =>
-                    v != _passwordCtrl.text ? 'Passwords do not match' : null,
+                v != _passwordCtrl.text ? 'Passwords do not match' : null,
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<String>(
@@ -82,16 +82,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (!_formKey.currentState!.validate()) return;
                     final messenger = ScaffoldMessenger.of(context);
                     final navigator = Navigator.of(context);
+
+                    // --- Firebase backend logic ---
                     final err = await context.read<AuthProvider>().register(
                       email: _emailCtrl.text.trim(),
                       password: _passwordCtrl.text,
                       role: _role,
                     );
+
                     if (err != null) {
                       if (!mounted) return;
                       messenger.showSnackBar(SnackBar(content: Text(err)));
                       return;
                     }
+
                     if (!mounted) return;
                     messenger.showSnackBar(
                       const SnackBar(content: Text('Registration successful')),

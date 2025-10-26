@@ -47,14 +47,13 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: const InputDecoration(labelText: 'Password'),
                 obscureText: true,
                 validator: (v) =>
-                    (v == null || v.isEmpty) ? 'Enter password' : null,
+                (v == null || v.isEmpty) ? 'Enter password' : null,
               ),
               const SizedBox(height: 12),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () async {
-                    // Use local ctx for dialog interactions and avoid using outer context
                     await showDialog(
                       context: context,
                       builder: (ctx) {
@@ -75,7 +74,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             ElevatedButton(
                               onPressed: () {
                                 Navigator.pop(ctx);
-                                // Defer using outer context until after the dialog completes
+                                // Add your password reset logic here if needed
                               },
                               child: const Text('Send'),
                             ),
@@ -83,7 +82,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         );
                       },
                     );
-                    // Dialog closed; ensure widget still mounted before using context
                     if (!mounted) return;
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(content: Text('Reset link sent (mock)')),
@@ -98,20 +96,35 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: ElevatedButton(
                   onPressed: () async {
                     if (!_formKey.currentState!.validate()) return;
-                    // Capture objects that depend on BuildContext before awaiting
+
                     final messenger = ScaffoldMessenger.of(context);
                     final navigator = Navigator.of(context);
-                    final err = await context.read<AuthProvider>().login(
+
+                    // --- Firebase login ---
+                    final role = await context.read<AuthProvider>().login(
                       email: _emailCtrl.text.trim(),
                       password: _passwordCtrl.text,
                     );
-                    if (err != null) {
-                      if (!mounted) return;
-                      messenger.showSnackBar(SnackBar(content: Text(err)));
+
+                    if (role == null) return;
+
+                    if (role.startsWith('error:')) {
+                      messenger.showSnackBar(SnackBar(
+                          content:
+                          Text(role.replaceFirst('error:', ''))));
                       return;
                     }
-                    if (!mounted) return;
-                    navigator.pushReplacementNamed('/dashboard');
+
+                    if (role == 'student') {
+                      navigator.pushReplacementNamed('/dashboard');
+                    } else if (role == 'worker') {
+                      // TODO: Add Health Worker routing later
+                      messenger.showSnackBar(const SnackBar(
+                          content: Text(
+                              'Health Worker login disabled for now')));
+                      // Example later:
+                      // navigator.pushReplacementNamed('/healthworkerHome');
+                    }
                   },
                   child: const Text('Login'),
                 ),
