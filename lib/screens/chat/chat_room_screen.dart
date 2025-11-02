@@ -187,7 +187,7 @@ class _ChatRoomScreenState extends State<ChatRoomScreen> {
               color: Theme.of(context).cardTheme.color,
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, -2),
                 ),
@@ -294,7 +294,7 @@ class _MessageBubble extends StatelessWidget {
                     timeFormat.format(message.timestamp),
                     style: TextStyle(
                       color: isStudent
-                          ? Colors.white.withOpacity(0.7)
+                          ? Colors.white.withValues(alpha: 0.7)
                           : Colors.grey.shade600,
                       fontSize: 11,
                     ),

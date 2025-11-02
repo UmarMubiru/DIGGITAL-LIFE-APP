@@ -1,0 +1,118 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is a health worker
+    function isHealthWorker() {
+      return request.auth != null && 
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'health_worker' ||
+         get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'worker');
+    }
+    
+    // Helper function to check if user exists
+    function userExists() {
+      return exists(/databases/$(database)/documents/users/$(request.auth.uid));
+    }
+    
+    // Users collection
+    match /users/{userId} {
+      // Users can read their own data, health workers can read all
+      allow read: if request.auth != null && (
+        request.auth.uid == userId || 
+        isHealthWorker()
+      );
+      // Users can update their own data
+      allow update: if request.auth != null && request.auth.uid == userId;
+      // Only authenticated users can create their profile
+      allow create: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Awareness collection
+    match /awareness/{documentId} {
+      // Anyone authenticated can read
+      allow read: if request.auth != null;
+      
+      // Only authenticated health workers can create, update, or delete
+      allow create: if request.auth != null && isHealthWorker();
+      allow update: if request.auth != null && isHealthWorker();
+      allow delete: if request.auth != null && isHealthWorker();
+    }
+    
+    // Bookings collection
+    match /bookings/{bookingId} {
+      // Users can read their own bookings, health workers can read all
+      allow read: if request.auth != null && (
+        resource.data.studentId == request.auth.uid ||
+        resource.data.hwId == request.auth.uid ||
+        isHealthWorker()
+      );
+      
+      // Students can create bookings
+      allow create: if request.auth != null && 
+        !isHealthWorker() &&
+        request.resource.data.studentId == request.auth.uid;
+      
+      // Health workers can update bookings
+      allow update: if request.auth != null && isHealthWorker();
+    }
+    
+    // Reminders collection
+    match /reminders/{reminderId} {
+      // Users can read their own reminders
+      allow read: if request.auth != null && (
+        resource.data.studentId == request.auth.uid ||
+        resource.data.hwId == request.auth.uid
+      );
+      
+      // Users can create their own reminders
+      allow create: if request.auth != null && (
+        request.resource.data.studentId == request.auth.uid ||
+        request.resource.data.hwId == request.auth.uid
+      );
+      
+      // Users can update their own reminders
+      allow update: if request.auth != null && (
+        resource.data.studentId == request.auth.uid ||
+        resource.data.hwId == request.auth.uid
+      );
+    }
+    
+    // Requests collection (for chat/consultations)
+    match /requests/{requestId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null && !isHealthWorker();
+      allow update: if request.auth != null && isHealthWorker();
+    }
+    
+    // Bookmarks collection (for student bookmarks)
+    match /bookmarks/{bookmarkId} {
+      // Users can only read their own bookmarks
+      allow read: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+      
+      // Users can create their own bookmarks
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+      
+      // Users can delete their own bookmarks
+      allow delete: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+    }
+    
+    // Chat rooms collection
+    match /chatRooms/{roomId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+    
+    // Messages subcollection
+    match /chatRooms/{roomId}/messages/{messageId} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+      allow delete: if request.auth != null;
+    }
+  }
+}
+

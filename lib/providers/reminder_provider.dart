@@ -1,168 +1,153 @@
-import 'dart:convert';
-
-import 'package:flutter/foundation.dart';
+import 'dart:async';
+import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/data/latest.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
-import 'package:flutter_native_timezone/flutter_native_timezone.dart'
-as native_tz;
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:timezone/data/latest_all.dart' as tzdata;
 
-class Reminder {
-  final String id;
-  final String title;
-  final DateTime dateTime;
+class ReminderProvider with ChangeNotifier {
+  final FirebaseFirestore _fs = FirebaseFirestore.instance;
+  final FlutterLocalNotificationsPlugin _local =
+      FlutterLocalNotificationsPlugin();
+  bool _initialized = false;
 
-  Reminder({required this.id, required this.title, required this.dateTime});
-
-  Map<String, dynamic> toJson() => {
-    'id': id,
-    'title': title,
-    'dateTime': dateTime.toIso8601String(),
-  };
-
-  static Reminder fromJson(Map<String, dynamic> j) => Reminder(
-    id: j['id'] as String,
-    title: j['title'] as String,
-    dateTime: DateTime.parse(j['dateTime'] as String),
-  );
-}
-
-class ReminderProvider extends ChangeNotifier {
-  static const _kKey = 'app.reminders';
-  final List<Reminder> _items = [];
-  final FlutterLocalNotificationsPlugin _notifications =
-  FlutterLocalNotificationsPlugin();
-  bool _notificationsInitialized = false;
-
-  List<Reminder> get items => List.unmodifiable(_items);
+  ReminderProvider();
 
   Future<void> initialize() async {
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getStringList(_kKey) ?? [];
-    _items.clear();
-    for (final s in raw) {
-      try {
-        final m = json.decode(s) as Map<String, dynamic>;
-        _items.add(Reminder.fromJson(m));
-      } catch (_) {}
-    }
-    await _initNotifications();
-    // (re)create scheduled notifications for existing reminders
-    for (final r in _items) {
-      await _scheduleForReminder(r);
-    }
-    notifyListeners();
-  }
-
-  Future<void> add(Reminder r) async {
-    _items.add(r);
-    await _scheduleForReminder(r);
-    await _save();
-    notifyListeners();
-  }
-
-  Future<void> remove(String id) async {
-    final toRemove = _items.where((e) => e.id == id).toList();
-    for (final r in toRemove) {
-      await _cancelNotificationsForReminder(r);
-    }
-    _items.removeWhere((e) => e.id == id);
-    await _save();
-    notifyListeners();
-  }
-
-  Future<void> _save() async {
-    final prefs = await SharedPreferences.getInstance();
-    final list = _items.map((e) => json.encode(e.toJson())).toList();
-    await prefs.setStringList(_kKey, list);
-  }
-
-  Future<void> _initNotifications() async {
-    if (_notificationsInitialized) return;
+    if (_initialized) return;
+    tzdata.initializeTimeZones();
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const initSettings = InitializationSettings(android: android);
-    try {
-      await _notifications.initialize(initSettings);
-      // init timezone
-      try {
-        tzdata.initializeTimeZones();
-        final name = await native_tz.FlutterNativeTimezone.getLocalTimezone();
-        tz.setLocalLocation(tz.getLocation(name));
-      } catch (_) {}
-      _notificationsInitialized = true;
-    } catch (_) {
-      // ignore initialization errors
-      _notificationsInitialized = false;
-    }
+    const ios = DarwinInitializationSettings();
+    await _local.initialize(
+      const InitializationSettings(android: android, iOS: ios),
+    );
+    _initialized = true;
   }
 
-  int _baseIdFor(String id) => id.hashCode & 0x7fffffff;
+  Future<void> _ensureInit() async {
+    if (!_initialized) await initialize();
+  }
 
-  Future<void> _scheduleForReminder(Reminder r) async {
-    if (!_notificationsInitialized) return;
-    final base = _baseIdFor(r.id);
-    final dayBeforeId = base;
-    final onDayId = base + 1;
-
-    final scheduledOnDay = DateTime(
-      r.dateTime.year,
-      r.dateTime.month,
-      r.dateTime.day,
-      r.dateTime.hour,
-      r.dateTime.minute,
-    );
-    final dayBefore = scheduledOnDay.subtract(const Duration(days: 1));
-
-    const androidDetails = AndroidNotificationDetails(
-      'reminder_channel',
+  /// Show an immediate local notification (in-app + system)
+  Future<void> showImmediateNotification({
+    required String id,
+    required String title,
+    required String body,
+  }) async {
+    await _ensureInit();
+    final androidDetails = AndroidNotificationDetails(
+      'reminders_channel',
       'Reminders',
-      channelDescription: 'Notifications for scheduled reminders',
+      channelDescription: 'Reminder notifications',
       importance: Importance.max,
       priority: Priority.high,
     );
-    const details = NotificationDetails(android: androidDetails);
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(),
+    );
+    final nid = id.hashCode & 0x7fffffff;
+    await _local.show(nid, title, body, details);
+  }
 
-    final now = DateTime.now();
-    try {
-      if (dayBefore.isAfter(now)) {
-        await _notifications.zonedSchedule(
-          dayBeforeId,
-          'Reminder (1 day left)',
-          r.title,
-          tz.TZDateTime.from(dayBefore, tz.local),
-          details,
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        );
-      }
-    } catch (_) {
-      // If zoned scheduling fails we skip the notification (platform may not support).
-    }
+  /// Schedule a zoned notification for a future date (uses timezone package)
+  Future<void> scheduleZonedNotification({
+    required String id,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+  }) async {
+    await _ensureInit();
+    final androidDetails = AndroidNotificationDetails(
+      'reminders_channel',
+      'Reminders',
+      channelDescription: 'Reminder notifications',
+      importance: Importance.max,
+      priority: Priority.high,
+    );
+    final details = NotificationDetails(
+      android: androidDetails,
+      iOS: DarwinNotificationDetails(),
+    );
+    final tzDest = tz.TZDateTime.from(scheduledDate, tz.local);
+    final nid = id.hashCode & 0x7fffffff;
+    await _local.zonedSchedule(
+      nid,
+      title,
+      body,
+      tzDest,
+      details,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+    );
+  }
 
-    try {
-      if (scheduledOnDay.isAfter(now)) {
-        await _notifications.zonedSchedule(
-          onDayId,
-          'Reminder (Today)',
-          r.title,
-          tz.TZDateTime.from(scheduledOnDay, tz.local),
-          details,
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        );
-      }
-    } catch (_) {
-      // If zoned scheduling fails we skip the notification (platform may not support).
+  /// Schedule a booking notification (wrapper for scheduleZonedNotification)
+  Future<void> scheduleBookingNotification({
+    required String reminderId,
+    required String title,
+    required String body,
+    required DateTime scheduledDate,
+  }) async {
+    await scheduleZonedNotification(
+      id: reminderId,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+    );
+  }
+
+  /// Stream reminders for either a student or a health worker
+  Stream<QuerySnapshot> streamRemindersForUser({
+    required String uid,
+    required String role,
+  }) {
+    final col = _fs.collection('reminders');
+    if (role == 'health_worker') {
+      return col
+          .where('hwId', isEqualTo: uid)
+          .orderBy('scheduledDate', descending: false)
+          .snapshots();
+    } else {
+      return col
+          .where('studentId', isEqualTo: uid)
+          .orderBy('scheduledDate', descending: false)
+          .snapshots();
     }
   }
 
-  Future<void> _cancelNotificationsForReminder(Reminder r) async {
-    if (!_notificationsInitialized) return;
-    final base = _baseIdFor(r.id);
-    final dayBeforeId = base;
-    final onDayId = base + 1;
-    try {
-      await _notifications.cancel(dayBeforeId);
-      await _notifications.cancel(onDayId);
-    } catch (_) {}
+  Future<void> markRead(String reminderId) async {
+    await _fs.collection('reminders').doc(reminderId).update({'read': true});
+  }
+
+  /// Create a new reminder in Firestore and schedule a notification
+  Future<void> createReminder({
+    required String uid,
+    required String role,
+    required String title,
+    required DateTime scheduledDate,
+  }) async {
+    final reminderData = <String, dynamic>{
+      'title': title,
+      'scheduledDate': Timestamp.fromDate(scheduledDate),
+      'createdAt': FieldValue.serverTimestamp(),
+      'read': false,
+      'type': 'reminder',
+    };
+
+    if (role == 'health_worker') {
+      reminderData['hwId'] = uid;
+    } else {
+      reminderData['studentId'] = uid;
+    }
+
+    final reminderRef = await _fs.collection('reminders').add(reminderData);
+
+    // Schedule local notification
+    await scheduleZonedNotification(
+      id: reminderRef.id,
+      title: title,
+      body: 'Reminder: $title',
+      scheduledDate: scheduledDate,
+    );
   }
 }

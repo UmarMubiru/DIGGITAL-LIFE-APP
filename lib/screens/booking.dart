@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:digital_life_care_app/widgets/top_actions.dart';
 import 'package:digital_life_care_app/widgets/app_brand.dart';
+import 'package:provider/provider.dart';
+import 'package:digital_life_care_app/providers/user_provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:intl/intl.dart';
 
 class BookingScreen extends StatefulWidget {
   const BookingScreen({super.key});
@@ -33,6 +39,11 @@ class _BookingScreenState extends State<BookingScreen> {
 
   void _confirmBooking() async {
     if (_selectedDate == null || _selectedSlot == null) return;
+    
+    final user = Provider.of<UserProvider>(context, listen: false);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    
     final dateStr =
         '${_selectedDate!.year}-${_selectedDate!.month.toString().padLeft(2, '0')}-${_selectedDate!.day.toString().padLeft(2, '0')}';
     final confirmed = await showDialog<bool>(
@@ -52,14 +63,67 @@ class _BookingScreenState extends State<BookingScreen> {
         ],
       ),
     );
+    
     if (confirmed == true) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Booked $dateStr at $_selectedSlot')),
-      );
-      setState(() {
-        _selectedSlot = null;
-      });
+      try {
+        // Combine date and time slot to create a DateTime
+        final timeParts = _selectedSlot!.split(' ');
+        final timeValue = timeParts[0].split(':');
+        final hour = int.parse(timeValue[0]);
+        final minute = int.parse(timeValue[1]);
+        final isPM = timeParts[1] == 'PM';
+        final hour24 = isPM && hour != 12 ? hour + 12 : (hour == 12 && !isPM ? 0 : hour);
+        
+        final requestedDateTime = DateTime(
+          _selectedDate!.year,
+          _selectedDate!.month,
+          _selectedDate!.day,
+          hour24,
+          minute,
+        );
+        
+        // Save booking to Firestore
+        await FirebaseFirestore.instance.collection('bookings').add({
+          'studentId': uid,
+          'studentName': user.username,
+          'requestedDate': Timestamp.fromDate(requestedDateTime),
+          'selectedTimeSlot': _selectedSlot,
+          'status': 'requested',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+        
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Booking requested for $dateStr at $_selectedSlot')),
+        );
+        setState(() {
+          _selectedSlot = null;
+        });
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    }
+  }
+  
+  String _formatTimestamp(Timestamp? t) {
+    if (t == null) return '-';
+    final dt = t.toDate();
+    return DateFormat.yMMMd().add_jm().format(dt);
+  }
+  
+  String _getStatusColor(String? status) {
+    switch (status) {
+      case 'accepted':
+        return 'Green';
+      case 'declined':
+        return 'Red';
+      case 'rescheduled':
+        return 'Orange';
+      default:
+        return 'Gray';
     }
   }
 
@@ -84,16 +148,14 @@ class _BookingScreenState extends State<BookingScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.grey.shade100,
+        leadingWidth: 56,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 12.0),
+          child: AppBrand.compact(logoSize: 28),
+        ),
         title: const Text('Book an Appointment'),
-        actions: [
-          Padding(
-            padding: EdgeInsets.only(right: 12.0),
-            child: AppBrand.compact(logoSize: 28),
-          ),
-          IconButton(onPressed: () {}, icon: Icon(Icons.person)),
-          IconButton(onPressed: () {}, icon: Icon(Icons.add_shopping_cart)),
-          IconButton(onPressed: () {}, icon: Icon(Icons.location_on)),
-        ],
+        actions: const [TopActions()],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(12.0),
@@ -258,6 +320,115 @@ class _BookingScreenState extends State<BookingScreen> {
                   style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
               ),
+            ),
+            const SizedBox(height: 24),
+            // Booking Status Section
+            const Divider(),
+            const SizedBox(height: 16),
+            const Text(
+              'Your Bookings',
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 12),
+            StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('bookings')
+                  .where('studentId', isEqualTo: FirebaseAuth.instance.currentUser?.uid ?? '')
+                  .orderBy('createdAt', descending: true)
+                  .limit(5)
+                  .snapshots(),
+              builder: (context, snap) {
+                if (snap.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snap.hasError) {
+                  return Center(child: Text('Error: ${snap.error}'));
+                }
+                final docs = snap.data?.docs ?? [];
+                if (docs.isEmpty) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('No bookings yet. Book an appointment above.'),
+                    ),
+                  );
+                }
+                return ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final doc = docs[index];
+                    final data = (doc.data() ?? {}) as Map<String, dynamic>;
+                    final status = (data['status'] ?? 'requested') as String;
+                    final requested = data['requestedDate'] as Timestamp?;
+                    final timeSlot = (data['selectedTimeSlot'] ?? '-') as String;
+                    final scheduled = data['scheduledDate'] as Timestamp?;
+                    
+                    Color statusColor;
+                    IconData statusIcon;
+                    switch (status) {
+                      case 'accepted':
+                        statusColor = Colors.green;
+                        statusIcon = Icons.check_circle;
+                        break;
+                      case 'declined':
+                        statusColor = Colors.red;
+                        statusIcon = Icons.cancel;
+                        break;
+                      case 'rescheduled':
+                        statusColor = Colors.orange;
+                        statusIcon = Icons.schedule;
+                        break;
+                      default:
+                        statusColor = Colors.grey;
+                        statusIcon = Icons.pending;
+                    }
+                    
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 6),
+                      child: Padding(
+                        padding: const EdgeInsets.all(12.0),
+                        child: Row(
+                          children: [
+                            Icon(statusIcon, color: statusColor, size: 32),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Status: ${status.toUpperCase()}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      color: statusColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Requested: ${_formatTimestamp(requested)}',
+                                    style: const TextStyle(fontSize: 12),
+                                  ),
+                                  if (scheduled != null)
+                                    Text(
+                                      'Scheduled: ${_formatTimestamp(scheduled)}',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                  if (timeSlot != '-')
+                                    Text(
+                                      'Time Slot: $timeSlot',
+                                      style: const TextStyle(fontSize: 12),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
             ),
             const SizedBox(height: 16),
           ],

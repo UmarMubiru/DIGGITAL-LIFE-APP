@@ -22,7 +22,13 @@ class _LocatorMapScreenState extends State<LocatorMapScreen> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LocatorProvider>().initialize();
+      if (mounted) {
+        final provider = context.read<LocatorProvider>();
+        // Always initialize if clinics list is empty
+        if (provider.clinics.isEmpty) {
+          provider.initialize();
+        }
+      }
     });
   }
 
@@ -50,6 +56,7 @@ class _LocatorMapScreenState extends State<LocatorMapScreen> {
         ),
         onTap: () {
           provider.selectClinic(clinic);
+          // Show bottom sheet with navigation option
           _showClinicDetails(clinic);
         },
       );
@@ -189,7 +196,7 @@ class _LocatorMapScreenState extends State<LocatorMapScreen> {
                           _showYouthFriendlyOnly = value;
                         });
                       },
-                      activeColor: Theme.of(context).colorScheme.primary,
+                      activeThumbColor: Theme.of(context).colorScheme.primary,
                     ),
                   ],
                 ),
@@ -235,11 +242,25 @@ class _ClinicDetailsSheet extends StatelessWidget {
   const _ClinicDetailsSheet({required this.clinic});
 
   Future<void> _launchDirections() async {
+    // Use Google Maps navigation URL with destination coordinates
+    // This will open Google Maps app if available, or browser
     final url = Uri.parse(
-      'https://www.google.com/maps/dir/?api=1&destination=${clinic.position.latitude},${clinic.position.longitude}',
+      'https://www.google.com/maps/dir/?api=1&destination=${clinic.position.latitude},${clinic.position.longitude}&travelmode=driving',
     );
-    if (await canLaunchUrl(url)) {
-      await launchUrl(url, mode: LaunchMode.externalApplication);
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback: Try opening with maps:// scheme for native apps
+        final mapsUrl = Uri.parse(
+          'maps://maps.google.com/?daddr=${clinic.position.latitude},${clinic.position.longitude}',
+        );
+        if (await canLaunchUrl(mapsUrl)) {
+          await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error launching directions: $e');
     }
   }
 

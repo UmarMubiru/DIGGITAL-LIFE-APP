@@ -3,11 +3,15 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class UserProvider extends ChangeNotifier {
   static const _keyUsername = 'user_username';
   static const _keyRole = 'auth_role';
   static const _keyPhotoPath = 'user_photo_path';
+  static const _keyPhotoUrl = 'user_photo_url';
   static const _keyThemeSeed = 'user_theme_seed';
   static const _keyIsDark = 'user_is_dark_mode';
   static const _defaultUsername = 'Test User';
@@ -15,6 +19,7 @@ class UserProvider extends ChangeNotifier {
   String _username = _defaultUsername;
   String _role = 'student';
   String _photoPath = '';
+  String _photoUrl = '';
   Color _themeSeed = Colors.blue;
   bool _isDark = false;
   bool _initialized = false;
@@ -25,6 +30,8 @@ class UserProvider extends ChangeNotifier {
   Color get themeSeed => _themeSeed;
   bool get isDark => _isDark;
   bool get hasPhoto => _photoPath.isNotEmpty;
+  bool get hasPhotoUrl => _photoUrl.isNotEmpty;
+  String get photoUrl => _photoUrl;
   bool get initialized => _initialized;
 
   Future<void> initialize() async {
@@ -32,6 +39,7 @@ class UserProvider extends ChangeNotifier {
     _username = prefs.getString(_keyUsername) ?? _defaultUsername;
     _role = prefs.getString(_keyRole) ?? 'student';
     _photoPath = prefs.getString(_keyPhotoPath) ?? '';
+    _photoUrl = prefs.getString(_keyPhotoUrl) ?? '';
     final storedSeed = prefs.getInt(_keyThemeSeed);
     if (storedSeed != null) {
       _themeSeed = Color(storedSeed);
@@ -39,6 +47,41 @@ class UserProvider extends ChangeNotifier {
     _isDark = prefs.getBool(_keyIsDark) ?? false;
     _initialized = true;
     notifyListeners();
+
+    // Try to hydrate from Firestore if logged in
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      try {
+        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final data = doc.data();
+        if (data != null) {
+          // Check for username in multiple possible locations
+          String? cloudName;
+          if (data.containsKey('username')) {
+            cloudName = data['username'] as String?;
+          } else if (data.containsKey('profile') && data['profile'] is Map) {
+            final profile = data['profile'] as Map<String, dynamic>;
+            cloudName = profile['username'] as String?;
+            // Also try 'name' field if username not found
+            if ((cloudName == null || cloudName.isEmpty) && profile.containsKey('name')) {
+              cloudName = profile['name'] as String?;
+            }
+          }
+          
+          final cloudPhoto = data['photoUrl'] as String?;
+          
+          if (cloudName != null && cloudName.isNotEmpty && cloudName != _defaultUsername) {
+            _username = cloudName;
+            await prefs.setString(_keyUsername, _username);
+          }
+          if (cloudPhoto != null && cloudPhoto.isNotEmpty) {
+            _photoUrl = cloudPhoto;
+            await prefs.setString(_keyPhotoUrl, _photoUrl);
+          }
+          notifyListeners();
+        }
+      } catch (_) {}
+    }
   }
 
   Future<String?> updateUsername(String name) async {
@@ -75,7 +118,7 @@ class UserProvider extends ChangeNotifier {
   }
 
   Future<void> updatePhoto(File imageFile) async {
-    // Mock: compress and "save" to temp, store path only
+    // Compress
     final targetPath = imageFile.path.replaceAll('.jpg', '_compressed.jpg');
     try {
       await FlutterImageCompress.compressAndGetFile(imageFile.path, targetPath, quality: 60);
@@ -86,14 +129,120 @@ class UserProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_keyPhotoPath, _photoPath);
     notifyListeners();
+
+    // Upload to Firebase Storage and update Firestore
+    final authUser = FirebaseAuth.instance.currentUser;
+    if (authUser != null) {
+      try {
+        final storageRef = FirebaseStorage.instance.ref('users/${authUser.uid}/profile.jpg');
+        await storageRef.putFile(File(_photoPath));
+        final url = await storageRef.getDownloadURL();
+        _photoUrl = url;
+        await prefs.setString(_keyPhotoUrl, _photoUrl);
+        await FirebaseFirestore.instance.collection('users').doc(authUser.uid).set(
+          {
+            'photoUrl': _photoUrl,
+          },
+          SetOptions(merge: true),
+        );
+        notifyListeners();
+      } catch (_) {
+        // ignore upload errors for now
+      }
+    }
   }
 
   String initials() {
-    if (_username.trim().isEmpty) return 'TU';
-    final parts = _username.trim().split(RegExp(r'\s+'));
-    final first = parts.isNotEmpty ? parts.first.characters.first.toUpperCase() : 'T';
-    final last = parts.length > 1 ? parts.last.characters.first.toUpperCase() : 'U';
+    final trimmedName = _username.trim();
+    // If username is empty or default, return placeholder
+    if (trimmedName.isEmpty || trimmedName == _defaultUsername) {
+      return '??';
+    }
+    
+    // Split by whitespace to get name parts
+    final parts = trimmedName.split(RegExp(r'\s+')).where((p) => p.isNotEmpty).toList();
+    
+    if (parts.isEmpty) return '??';
+    
+    // Get first letter of first name
+    final first = parts[0].isNotEmpty ? parts[0][0].toUpperCase() : 'U';
+    
+    // Get first letter of last name if available, otherwise second letter of first name
+    String last;
+    if (parts.length > 1 && parts[parts.length - 1].isNotEmpty) {
+      last = parts[parts.length - 1][0].toUpperCase();
+    } else if (parts[0].length > 1) {
+      last = parts[0][1].toUpperCase();
+    } else {
+      last = first; // Single character name
+    }
+    
     return '$first$last';
+  }
+  
+  /// Refresh user data from Firestore
+  Future<void> refreshFromFirestore() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+    
+    try {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+      final data = doc.data();
+      if (data != null) {
+        // Check for username in multiple possible locations
+        String? cloudName;
+        if (data.containsKey('username')) {
+          cloudName = data['username'] as String?;
+        } else if (data.containsKey('profile') && data['profile'] is Map) {
+          final profile = data['profile'] as Map<String, dynamic>;
+          cloudName = profile['username'] as String?;
+          // Also try 'name' field if username not found
+          if ((cloudName == null || cloudName.isEmpty) && profile.containsKey('name')) {
+            cloudName = profile['name'] as String?;
+          }
+        }
+        
+        // Get role from Firestore (check both top-level and profile)
+        String? cloudRole;
+        if (data.containsKey('role')) {
+          cloudRole = data['role'] as String?;
+        } else if (data.containsKey('profile') && data['profile'] is Map) {
+          final profile = data['profile'] as Map<String, dynamic>;
+          cloudRole = profile['role'] as String?;
+        }
+        
+        final cloudPhoto = data['photoUrl'] as String?;
+        
+        final prefs = await SharedPreferences.getInstance();
+        bool shouldNotify = false;
+        
+        if (cloudName != null && cloudName.isNotEmpty && cloudName != _defaultUsername) {
+          _username = cloudName;
+          await prefs.setString(_keyUsername, _username);
+          shouldNotify = true;
+        }
+        
+        // Update role from Firestore if available - normalize to lowercase
+        if (cloudRole != null && cloudRole.isNotEmpty) {
+          final normalizedRole = cloudRole.trim().toLowerCase();
+          if (normalizedRole != _role) {
+            _role = normalizedRole;
+            await prefs.setString(_keyRole, _role);
+            shouldNotify = true;
+          }
+        }
+        
+        if (cloudPhoto != null && cloudPhoto.isNotEmpty) {
+          _photoUrl = cloudPhoto;
+          await prefs.setString(_keyPhotoUrl, _photoUrl);
+          shouldNotify = true;
+        }
+        
+        if (shouldNotify) {
+        notifyListeners();
+        }
+      }
+    } catch (_) {}
   }
 
   Color hashColor() {

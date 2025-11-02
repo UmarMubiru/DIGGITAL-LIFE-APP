@@ -7,14 +7,14 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+class HWProfileScreen extends StatefulWidget {
+  const HWProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  State<HWProfileScreen> createState() => _HWProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
+class _HWProfileScreenState extends State<HWProfileScreen> {
   final _nameCtrl = TextEditingController();
   bool _twoFA = false;
   bool _notifications = true;

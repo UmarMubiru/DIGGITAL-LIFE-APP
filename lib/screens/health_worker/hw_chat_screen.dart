@@ -1,12 +1,12 @@
 import 'package:digital_life_care_app/providers/chat_provider.dart';
 import 'package:digital_life_care_app/screens/chat/chat_room_screen.dart';
-import 'package:digital_life_care_app/widgets/top_actions.dart';
+import 'package:digital_life_care_app/widgets/hw_top_actions.dart';
 import 'package:digital_life_care_app/widgets/app_brand.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-class ChatHomeScreen extends StatelessWidget {
-  const ChatHomeScreen({super.key});
+class HWChatScreen extends StatelessWidget {
+  const HWChatScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -20,46 +20,46 @@ class ChatHomeScreen extends StatelessWidget {
           padding: EdgeInsets.only(left: 12.0),
           child: AppBrand.compact(logoSize: 28),
         ),
-        title: const Text('Chat with Health Workers'),
-        actions: const [TopActions()],
+        title: const Text('Chat with Students'),
+        actions: const [HWTopActions()],
       ),
       body: chatProvider.chatRooms.isEmpty
           ? Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.chat_bubble_outline,
-              size: 80,
-              color: Colors.grey.shade400,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No conversations yet',
-              style: TextStyle(
-                fontSize: 18,
-                color: Colors.grey.shade600,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.chat_bubble_outline,
+                    size: 80,
+                    color: Colors.grey.shade400,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No conversations yet',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Start a new chat to help students',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade500,
+                    ),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Start a new chat to ask questions',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey.shade500,
-              ),
-            ),
-          ],
-        ),
-      )
+            )
           : ListView.builder(
-        padding: const EdgeInsets.all(8),
-        itemCount: chatProvider.chatRooms.length,
-        itemBuilder: (context, index) {
-          final room = chatProvider.chatRooms[index];
-          return _ChatRoomCard(room: room);
-        },
-      ),
+              padding: const EdgeInsets.all(8),
+              itemCount: chatProvider.chatRooms.length,
+              itemBuilder: (context, index) {
+                final room = chatProvider.chatRooms[index];
+                return _ChatRoomCard(room: room);
+              },
+            ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           final roomId = await context.read<ChatProvider>().startNewChat();

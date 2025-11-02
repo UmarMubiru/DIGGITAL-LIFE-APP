@@ -1,7 +1,9 @@
 import 'package:digital_life_care_app/providers/locator_provider.dart';
+import 'package:digital_life_care_app/widgets/top_actions.dart';
 import 'package:digital_life_care_app/widgets/app_brand.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class LocatorListScreen extends StatefulWidget {
   const LocatorListScreen({super.key});
@@ -13,6 +15,25 @@ class LocatorListScreen extends StatefulWidget {
 class _LocatorListScreenState extends State<LocatorListScreen> {
   String _searchQuery = '';
   String _sortBy = 'distance'; // distance, rating, name
+  bool _initialized = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Initialize LocatorProvider if not already initialized (only once)
+    if (!_initialized) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          final provider = context.read<LocatorProvider>();
+          // Always initialize if clinics list is empty
+          if (provider.clinics.isEmpty) {
+            provider.initialize();
+          }
+        }
+      });
+      _initialized = true;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,172 +63,231 @@ class _LocatorListScreenState extends State<LocatorListScreen> {
 
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.grey.shade100,
+        leadingWidth: 56,
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 12.0),
+          child: AppBrand.compact(logoSize: 28),
+        ),
         title: const Text('Nearby Clinics'),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12.0),
-            child: AppBrand.compact(logoSize: 28),
-          ),
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.sort),
-            onSelected: (value) {
-              setState(() {
-                _sortBy = value;
-              });
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'distance',
-                child: Row(
-                  children: [
-                    Icon(Icons.near_me, size: 18),
-                    SizedBox(width: 8),
-                    Text('Sort by Distance'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'rating',
-                child: Row(
-                  children: [
-                    Icon(Icons.star, size: 18),
-                    SizedBox(width: 8),
-                    Text('Sort by Rating'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem(
-                value: 'name',
-                child: Row(
-                  children: [
-                    Icon(Icons.sort_by_alpha, size: 18),
-                    SizedBox(width: 8),
-                    Text('Sort by Name'),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        actions: const [
+          TopActions(),
         ],
       ),
-      body: Column(
-        children: [
-          // Search bar
-          Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search clinics...',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    setState(() {
-                      _searchQuery = '';
-                    });
-                  },
-                )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              onChanged: (value) {
-                setState(() {
-                  _searchQuery = value;
-                });
-              },
-            ),
-          ),
-
-          // Results count
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Row(
-              children: [
-                Text(
-                  '${clinics.length} ${clinics.length == 1 ? 'clinic' : 'clinics'} found',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.grey,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  'Sorted by: ${_sortBy == 'distance' ? 'Distance' : _sortBy == 'rating' ? 'Rating' : 'Name'}',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-
-          // Clinics list
-          Expanded(
-            child: clinics.isEmpty
-                ? Center(
+      body: provider.isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : SafeArea(
               child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.search_off,
-                    size: 64,
-                    color: Colors.grey.shade400,
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No clinics found',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey.shade600,
+                  // Search bar and sort
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Column(
+                      children: [
+                        TextField(
+                          decoration: InputDecoration(
+                            hintText: 'Search clinics...',
+                            prefixIcon: const Icon(Icons.search),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear),
+                                    onPressed: () {
+                                      if (mounted) {
+                                        setState(() {
+                                          _searchQuery = '';
+                                        });
+                                      }
+                                    },
+                                  )
+                                : null,
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            filled: true,
+                            fillColor: Colors.grey.shade50,
+                          ),
+                          onChanged: (value) {
+                            if (mounted) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            const Text('Sort by: '),
+                            ChoiceChips(
+                              options: const ['distance', 'rating', 'name'],
+                              selected: _sortBy,
+                              onSelected: (value) {
+                                if (mounted) {
+                                  setState(() => _sortBy = value);
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ],
                     ),
                   ),
-                ],
+
+                  // Clinics list
+                  Expanded(
+                    child: clinics.isEmpty
+                    ? Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.location_off,
+                              size: 64,
+                              color: Colors.grey.shade400,
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              provider.userLocation == null
+                                  ? 'Loading clinics...'
+                                  : 'No clinics found',
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.grey.shade600,
+                              ),
+                            ),
+                            if (provider.userLocation == null)
+                              const Padding(
+                                padding: EdgeInsets.all(16.0),
+                                child: Text(
+                                  'Please wait while we fetch nearby clinics',
+                                  style: TextStyle(fontSize: 12),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ),
+                          ],
+                        ),
+                      )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            itemCount: clinics.length,
+                            itemBuilder: (context, index) {
+                              final clinic = clinics[index];
+                              final distance = provider.userLocation != null
+                                  ? provider.calculateDistance(
+                                      provider.userLocation!,
+                                      clinic.position,
+                                    )
+                                  : 0.0;
+                              return _ClinicListCard(
+                                clinic: clinic,
+                                distance: distance,
+                                onNavigate: () => _openNavigationToClinic(clinic),
+                              );
+                            },
+                          ),
+                    ),
+                  ],
+                ),
               ),
-            )
-                : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: clinics.length,
-              itemBuilder: (context, index) {
-                final clinic = clinics[index];
-                final distance = provider.userLocation != null
-                    ? provider.calculateDistance(
-                  provider.userLocation!,
-                  clinic.position,
-                )
-                    : 0.0;
-                return _ClinicListCard(
-                  clinic: clinic,
-                  distance: distance,
-                );
-              },
-            ),
-          ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           Navigator.pop(context);
         },
-        child: const Icon(Icons.map),
         tooltip: 'View Map',
+        child: const Icon(Icons.map),
       ),
     );
+  }
+}
+
+// ChoiceChips widget for sort options (matching health worker side)
+class ChoiceChips extends StatelessWidget {
+  final List<String> options;
+  final String selected;
+  final Function(String) onSelected;
+
+  const ChoiceChips({
+    super.key,
+    required this.options,
+    required this.selected,
+    required this.onSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 8,
+      children: options.map((option) {
+        final isSelected = option == selected;
+        return ChoiceChip(
+          label: Text(
+            option == 'distance'
+                ? 'Distance'
+                : option == 'rating'
+                    ? 'Rating'
+                    : 'Name',
+          ),
+          selected: isSelected,
+          onSelected: (_) => onSelected(option),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          labelStyle: TextStyle(
+            color: isSelected ? Colors.white : Colors.black87,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+          ),
+          selectedColor: Theme.of(context).colorScheme.primary,
+          backgroundColor: Colors.grey.shade200,
+        );
+      }).toList(),
+    );
+  }
+}
+
+// Helper function to open navigation to clinic
+Future<void> _openNavigationToClinic(Clinic clinic) async {
+  // Use Google Maps navigation URL - works on mobile and web
+  final url = Uri.parse(
+    'https://www.google.com/maps/dir/?api=1&destination=${clinic.position.latitude},${clinic.position.longitude}&travelmode=driving',
+  );
+  try {
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url, mode: LaunchMode.externalApplication);
+    } else {
+      // Fallback for mobile devices - try maps:// scheme
+      final mapsUrl = Uri.parse(
+        'maps://maps.google.com/?daddr=${clinic.position.latitude},${clinic.position.longitude}',
+      );
+      try {
+        if (await canLaunchUrl(mapsUrl)) {
+          await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
+        }
+      } catch (_) {
+        // If maps:// fails, try comgooglemaps:// for iOS
+        final iosMapsUrl = Uri.parse(
+          'comgooglemaps://?daddr=${clinic.position.latitude},${clinic.position.longitude}&directionsmode=driving',
+        );
+        try {
+          if (await canLaunchUrl(iosMapsUrl)) {
+            await launchUrl(iosMapsUrl, mode: LaunchMode.externalApplication);
+          }
+        } catch (e) {
+          debugPrint('Error launching navigation: $e');
+        }
+      }
+    }
+  } catch (e) {
+    debugPrint('Error launching navigation: $e');
   }
 }
 
 class _ClinicListCard extends StatelessWidget {
   final Clinic clinic;
   final double distance;
+  final VoidCallback onNavigate;
 
   const _ClinicListCard({
     required this.clinic,
     required this.distance,
+    required this.onNavigate,
   });
 
   @override
@@ -220,14 +300,8 @@ class _ClinicListCard extends StatelessWidget {
       ),
       child: InkWell(
         onTap: () {
-          showModalBottomSheet(
-            context: context,
-            isScrollControlled: true,
-            shape: const RoundedRectangleBorder(
-              borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-            ),
-            builder: (context) => _ClinicDetailsSheet(clinic: clinic),
-          );
+          // Directly open navigation when clicking on clinic card
+          onNavigate();
         },
         borderRadius: BorderRadius.circular(12),
         child: Padding(
@@ -342,6 +416,21 @@ class _ClinicListCard extends StatelessWidget {
                     ],
                   ),
                   const Spacer(),
+                  // Navigation button - primary action
+                  ElevatedButton.icon(
+                    onPressed: onNavigate,
+                    icon: const Icon(Icons.directions, size: 16),
+                    label: Text('${distance.toStringAsFixed(1)} km', style: const TextStyle(fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
                   TextButton.icon(
                     onPressed: () {
                       Navigator.pushNamed(context, '/booking');
@@ -370,6 +459,34 @@ class _ClinicDetailsSheet extends StatelessWidget {
   final Clinic clinic;
 
   const _ClinicDetailsSheet({required this.clinic});
+
+  Future<void> _launchDirections() async {
+    final url = Uri.parse(
+      'https://www.google.com/maps/dir/?api=1&destination=${clinic.position.latitude},${clinic.position.longitude}&travelmode=driving',
+    );
+    try {
+      if (await canLaunchUrl(url)) {
+        await launchUrl(url, mode: LaunchMode.externalApplication);
+      } else {
+        // Fallback: Try maps:// scheme for native apps
+        final mapsUrl = Uri.parse(
+          'maps://maps.google.com/?daddr=${clinic.position.latitude},${clinic.position.longitude}',
+        );
+        if (await canLaunchUrl(mapsUrl)) {
+          await launchUrl(mapsUrl, mode: LaunchMode.externalApplication);
+        }
+      }
+    } catch (e) {
+      debugPrint('Error launching directions: $e');
+    }
+  }
+
+  Future<void> _launchPhone() async {
+    final url = Uri.parse('tel:${clinic.phone}');
+    if (await canLaunchUrl(url)) {
+      await launchUrl(url);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -413,13 +530,49 @@ class _ClinicDetailsSheet extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 20),
-          ElevatedButton.icon(
-            onPressed: () {
-              Navigator.pop(context);
-              Navigator.pushNamed(context, '/booking');
-            },
-            icon: const Icon(Icons.calendar_month),
-            label: const Text('Book Appointment'),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _launchDirections,
+                  icon: const Icon(Icons.directions),
+                  label: const Text('Get Directions'),
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    backgroundColor: Colors.blue,
+                    foregroundColor: Colors.white,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _launchPhone,
+                  icon: const Icon(Icons.phone),
+                  label: const Text('Call'),
+                  style: OutlinedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, '/booking');
+              },
+              icon: const Icon(Icons.calendar_month),
+              label: const Text('Book Appointment'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                foregroundColor: Colors.white,
+              ),
+            ),
           ),
         ],
       ),

@@ -1,0 +1,37 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    // Helper function to check if user is a health worker
+    function isHealthWorker() {
+      return request.auth != null && 
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'health_worker' ||
+        firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role == 'worker';
+    }
+    
+    // Awareness images - anyone can read, only health workers can upload
+    match /awareness_images/{imageId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        isHealthWorker() &&
+        request.resource.size < 5 * 1024 * 1024 && // 5MB limit
+        request.resource.contentType.matches('image/.*');
+    }
+    
+    // Profile pictures - users can upload their own
+    match /profile_pictures/{userId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && 
+        request.auth.uid == userId &&
+        request.resource.size < 2 * 1024 * 1024 && // 2MB limit
+        request.resource.contentType.matches('image/.*');
+    }
+    
+    // General uploads - authenticated users only
+    match /uploads/{allPaths=**} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        request.resource.size < 10 * 1024 * 1024; // 10MB limit
+    }
+  }
+}
+
