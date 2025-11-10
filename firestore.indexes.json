@@ -55,7 +55,49 @@
           "order": "ASCENDING"
         }
       ]
+    },
+    {
+  "collectionGroup": "chatRooms",
+  "queryScope": "COLLECTION",
+  "fields": [
+    {
+      "fieldPath": "studentId",
+      "order": "ASCENDING"
+    },
+    {
+      "fieldPath": "lastMessageAt",
+      "order": "DESCENDING"
     }
+  ]
+},
+{
+  "collectionGroup": "chatRooms",
+  "queryScope": "COLLECTION",
+  "fields": [
+    {
+      "fieldPath": "status",
+      "order": "ASCENDING"
+    },
+    {
+      "fieldPath": "lastMessageAt",
+      "order": "DESCENDING"
+    }
+  ]
+},
+{
+  "collectionGroup": "messages",
+  "queryScope": "COLLECTION",
+  "fields": [
+    {
+      "fieldPath": "roomId",
+      "order": "ASCENDING"
+    },
+    {
+      "fieldPath": "timestamp",
+      "order": "ASCENDING"
+    }
+  ]
+}
   ],
   "fieldOverrides": []
 }
