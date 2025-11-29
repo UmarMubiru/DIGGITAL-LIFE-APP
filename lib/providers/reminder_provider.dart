@@ -2,8 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:timezone/timezone.dart' as tz;
-import 'package:timezone/data/latest_all.dart' as tzdata;
 
 class ReminderProvider with ChangeNotifier {
   final FirebaseFirestore _fs = FirebaseFirestore.instance;
@@ -15,7 +13,8 @@ class ReminderProvider with ChangeNotifier {
 
   Future<void> initialize() async {
     if (_initialized) return;
-    tzdata.initializeTimeZones();
+    // Timezone initialization removed temporarily
+    // tzdata.initializeTimeZones();
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings();
     await _local.initialize(
@@ -50,7 +49,8 @@ class ReminderProvider with ChangeNotifier {
     await _local.show(nid, title, body, details);
   }
 
-  /// Schedule a zoned notification for a future date (uses timezone package)
+  /// Schedule a notification for a future date (simplified without timezone)
+  /// NOTE: This is a simplified version. For production, re-enable timezone packages.
   Future<void> scheduleZonedNotification({
     required String id,
     required String title,
@@ -58,6 +58,13 @@ class ReminderProvider with ChangeNotifier {
     required DateTime scheduledDate,
   }) async {
     await _ensureInit();
+    
+    // Show immediate notification as fallback since we can't schedule without timezone
+    // TODO: Re-enable timezone packages for proper scheduling
+    debugPrint('Warning: Timezone scheduling disabled. Showing immediate notification instead.');
+    await showImmediateNotification(id: id, title: title, body: body);
+    
+    /* Original timezone-based code - re-enable when timezone packages are working:
     final androidDetails = AndroidNotificationDetails(
       'reminders_channel',
       'Reminders',
@@ -79,6 +86,7 @@ class ReminderProvider with ChangeNotifier {
       details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
+    */
   }
 
   /// Schedule a booking notification (wrapper for scheduleZonedNotification)
