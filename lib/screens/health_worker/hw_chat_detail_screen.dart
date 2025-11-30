@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:digital_life_care_app/providers/chat_provider.dart';
-import 'package:digital_life_care_app/providers/user_provider.dart';
 
 class HWChatDetailScreen extends StatefulWidget {
   final String roomId;
