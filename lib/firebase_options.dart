@@ -23,20 +23,11 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for macos - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return macos;
       case TargetPlatform.windows:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for windows - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return windows;
       case TargetPlatform.linux:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for linux - '
@@ -60,6 +51,33 @@ class DefaultFirebaseOptions {
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyD7CcZKlQmW_GbmpV1Caa5bdCYsKddWT6s',
     appId: '1:135977508744:web:2bf5829408b7ed5aa4643d',
+    messagingSenderId: '135977508744',
+    projectId: 'digicare-efa85',
+    authDomain: 'digicare-efa85.firebaseapp.com',
+    storageBucket: 'digicare-efa85.firebasestorage.app',
+  );
+
+  static const FirebaseOptions macos = FirebaseOptions(
+    apiKey: 'AIzaSyC14BrGlmlm34arDEAZjgsLnqK2GB9IGOo',
+    appId: '1:135977508744:ios:d359a738a8606a2aa4643d',
+    messagingSenderId: '135977508744',
+    projectId: 'digicare-efa85',
+    storageBucket: 'digicare-efa85.firebasestorage.app',
+    iosBundleId: 'com.example.digitalLifeCareApp',
+  );
+
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyC14BrGlmlm34arDEAZjgsLnqK2GB9IGOo',
+    appId: '1:135977508744:ios:d359a738a8606a2aa4643d',
+    messagingSenderId: '135977508744',
+    projectId: 'digicare-efa85',
+    storageBucket: 'digicare-efa85.firebasestorage.app',
+    iosBundleId: 'com.example.digitalLifeCareApp',
+  );
+
+  static const FirebaseOptions windows = FirebaseOptions(
+    apiKey: 'AIzaSyD7CcZKlQmW_GbmpV1Caa5bdCYsKddWT6s',
+    appId: '1:135977508744:web:5a2f998e6dc1f790a4643d',
     messagingSenderId: '135977508744',
     projectId: 'digicare-efa85',
     authDomain: 'digicare-efa85.firebaseapp.com',
