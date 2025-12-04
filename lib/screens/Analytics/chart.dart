@@ -8,7 +8,7 @@ import 'package:digital_life_care_app/screens/Analytics/horizontal_bar_chart.dar
 import 'package:digital_life_care_app/widgets/key_insight_card.dart'; // 1. IMPORT THE NEW WIDGET
 import 'package:digital_life_care_app/widgets/top_actions.dart';
 import 'package:digital_life_care_app/widgets/app_brand.dart';
-
+import 'package:digital_life_care_app/widgets/ad_banner_widget.dart'; // 1. IMPORT THE NEW AD WIDGET
 
 class ChartScreen extends StatefulWidget {
   const ChartScreen({super.key});
@@ -21,7 +21,7 @@ class _ChartScreenState extends State<ChartScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
+      appBar:AppBar(
         backgroundColor: Colors.grey.shade100,
         leadingWidth: 56,
         leading: const Padding(
@@ -30,35 +30,35 @@ class _ChartScreenState extends State<ChartScreen> {
         ),
         title: const Text('Analytics'),
         actions: const [TopActions()],
-      ),
+      )
+
+      ,
       backgroundColor: const Color(0xFFF0F2F5),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _buildAdBanner(),
+            // 2. REPLACE THE OLD BANNER WITH OUR NEW WIDGET
+            const AdBannerWidget(),
+
             const SizedBox(height: 20),
 
-            // 2. REPLACE THE BUTTONS WITH THE NEW KEY INSIGHT CARD
             const KeyInsightCard(
               title: "KEY INSIGHT",
               statistic: "11%",
               description: "Prevalence among 2nd and 3rd-year students.",
-              icon: Icons.coronavirus_rounded, // Using a 'school' icon
+              icon: Icons.school,
               iconColor: Colors.orange,
             ),
-
             const SizedBox(height: 20),
 
-            // --- PIE CHART SECTION ---
             CustomPieChart(
               title: "Common Symptoms Reported",
               data: ChartDataProvider.symptomsPieData,
             ),
             const SizedBox(height: 20),
 
-            // --- BAR CHART SECTION ---
             CustomBarChart(
               title: "Behavioral Risk Factors",
               yAxisLabel: "Percentage (%)",
@@ -66,7 +66,6 @@ class _ChartScreenState extends State<ChartScreen> {
             ),
             const SizedBox(height: 20),
 
-            // --- HORIZONTAL BAR CHART SECTION ---
             CustomHorizontalBarChart(
               title: "STI Prevalence Among Students",
               data: ChartDataProvider.stiPrevalenceData,
@@ -77,21 +76,5 @@ class _ChartScreenState extends State<ChartScreen> {
     );
   }
 
-  Widget _buildAdBanner() {
-    return Container(
-      height: 100,
-      decoration: BoxDecoration(
-        color: Colors.deepOrangeAccent,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: const Center(
-        child: Text(
-          "Space for ads banner!",
-          style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-      ),
-    );
-  }
-
-// 3. THE _buildFilterButtons METHOD HAS BEEN REMOVED
+// 3. THE _buildAdBanner METHOD IS NO LONGER NEEDED AND HAS BEEN REMOVED
 }
