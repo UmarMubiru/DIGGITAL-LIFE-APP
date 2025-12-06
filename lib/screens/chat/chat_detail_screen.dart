@@ -84,7 +84,7 @@ class _ChatDetailScreenState extends State<ChatDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final chatProvider = context.watch<ChatProvider>();
-    final userProvider = context.watch<UserProvider>();
+    context.watch<UserProvider>();
 
     return Scaffold(
       appBar: AppBar(

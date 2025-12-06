@@ -182,6 +182,7 @@ class _HWChatScreenState extends State<HWChatScreen> {
         },
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'hw_fab_new_chat',
         onPressed: _isCreatingChat ? null : _showNewChatDialog,
         icon: _isCreatingChat
             ? const SizedBox(

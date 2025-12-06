@@ -112,29 +112,100 @@ class AuthProvider with ChangeNotifier {
     try {
       String email = identifier.trim();
 
-      // if identifier is not an email, first try the usernames mapping
+      // if identifier is not an email, try to resolve username to email
       if (!email.contains('@')) {
         final key = identifier.trim().toLowerCase();
+        String? resolvedEmail;
+        
+        // Method 1: Try the usernames collection mapping (most reliable)
         final mapping = await _firestore.collection('usernames').doc(key).get();
         if (mapping.exists) {
           final mappedEmail = (mapping.data() ?? {})['email'] as String?;
           if (mappedEmail != null && mappedEmail.isNotEmpty) {
-            email = mappedEmail;
-          }
-        } else {
-          // fallback: try users collection query on profile.usernameLower (case-insensitive)
-          final q = await _firestore
-              .collection('users')
-              .where('profile.usernameLower', isEqualTo: key)
-              .limit(1)
-              .get();
-          if (q.docs.isNotEmpty) {
-            final udata = q.docs.first.data();
-            email = (udata['email'] ?? email) as String;
-          } else {
-            return 'User not found';
+            resolvedEmail = mappedEmail;
           }
         }
+        
+        // Method 2: If not found, try users collection with top-level username field
+        if (resolvedEmail == null) {
+          try {
+            final q1 = await _firestore
+                .collection('users')
+                .where('username', isEqualTo: identifier.trim()) // Case-sensitive match first
+                .limit(1)
+                .get();
+            if (q1.docs.isNotEmpty) {
+              final udata = q1.docs.first.data();
+              resolvedEmail = udata['email'] as String?;
+            }
+          } catch (e) {
+            debugPrint('Query on username field failed: $e');
+          }
+        }
+        
+        // Method 3: Try profile.usernameLower (case-insensitive)
+        if (resolvedEmail == null) {
+          try {
+            final q2 = await _firestore
+                .collection('users')
+                .where('profile.usernameLower', isEqualTo: key)
+                .limit(1)
+                .get();
+            if (q2.docs.isNotEmpty) {
+              final udata = q2.docs.first.data();
+              resolvedEmail = udata['email'] as String?;
+            }
+          } catch (e) {
+            debugPrint('Query on profile.usernameLower failed: $e');
+          }
+        }
+        
+        // Method 4: Try profile.username (case-insensitive comparison in memory)
+        if (resolvedEmail == null) {
+          try {
+            // Get all users and filter in memory (less efficient but works without index)
+            final allUsers = await _firestore
+                .collection('users')
+                .limit(100) // Reasonable limit
+                .get();
+            
+            for (var doc in allUsers.docs) {
+              final data = doc.data();
+              // Check top-level username
+              if (data['username'] != null) {
+                final username = data['username'].toString().toLowerCase();
+                if (username == key) {
+                  resolvedEmail = data['email'] as String?;
+                  break;
+                }
+              }
+              // Check profile.username
+              if (data['profile'] is Map) {
+                final profile = data['profile'] as Map<String, dynamic>;
+                if (profile['username'] != null) {
+                  final username = profile['username'].toString().toLowerCase();
+                  if (username == key) {
+                    resolvedEmail = data['email'] as String?;
+                    break;
+                  }
+                }
+              }
+            }
+          } catch (e) {
+            debugPrint('In-memory username search failed: $e');
+          }
+        }
+        
+        if (resolvedEmail != null && resolvedEmail.isNotEmpty) {
+          email = resolvedEmail;
+        } else {
+          return 'Username not found. Please check your username or try logging in with your email.';
+        }
+      }
+
+      // Validate email before attempting login
+      if (!_isValidEmail(email)) {
+        return 'Invalid email format. Please check your username or email.';
       }
 
       final userCred = await _auth.signInWithEmailAndPassword(

@@ -114,18 +114,6 @@ class _BookingScreenState extends State<BookingScreen> {
     return DateFormat.yMMMd().add_jm().format(dt);
   }
   
-  String _getStatusColor(String? status) {
-    switch (status) {
-      case 'accepted':
-        return 'Green';
-      case 'declined':
-        return 'Red';
-      case 'rescheduled':
-        return 'Orange';
-      default:
-        return 'Gray';
-    }
-  }
 
   String _formatTimeOfDay(TimeOfDay t) {
     final hour = t.hourOfPeriod == 0 ? 12 : t.hourOfPeriod;

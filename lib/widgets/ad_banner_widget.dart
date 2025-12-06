@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 class AdBannerWidget extends StatefulWidget {
   const AdBannerWidget({super.key});
@@ -21,7 +22,10 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   @override
   void initState() {
     super.initState();
-    _loadAd(); // 2. Load the ad as soon as the widget is created
+    // Only load ads on supported (non-web) platforms
+    if (!kIsWeb) {
+      _loadAd(); // 2. Load the ad as soon as the widget is created
+    }
   }
 
   @override
@@ -57,6 +61,10 @@ class _AdBannerWidgetState extends State<AdBannerWidget> {
   // 5. The build method that decides what to show
   @override
   Widget build(BuildContext context) {
+    // On web, the google_mobile_ads plugin isn't available — show nothing
+    if (kIsWeb) {
+      return const SizedBox.shrink();
+    }
     if (_isAdLoaded && _bannerAd != null) {
       // If the ad is loaded, show it
       return SizedBox(

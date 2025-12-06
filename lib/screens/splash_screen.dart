@@ -11,14 +11,20 @@ class SplashScreen extends StatefulWidget {
 class _SplashScreenState extends State<SplashScreen> {
   bool _visible = false;
 
+  Timer? _showTimer;
+  Timer? _navTimer;
+
   @override
   void initState() {
     super.initState();
-    Timer(
-      const Duration(milliseconds: 150),
-      () => setState(() => _visible = true),
-    );
-    Timer(const Duration(milliseconds: 2100), _navigateNext);
+    _showTimer = Timer(const Duration(milliseconds: 150), () {
+      if (!mounted) return;
+      setState(() => _visible = true);
+    });
+    _navTimer = Timer(const Duration(milliseconds: 2100), () {
+      if (!mounted) return;
+      _navigateNext();
+    });
   }
 
   void _navigateNext() {
@@ -85,5 +91,12 @@ class _SplashScreenState extends State<SplashScreen> {
         },
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _showTimer?.cancel();
+    _navTimer?.cancel();
+    super.dispose();
   }
 }

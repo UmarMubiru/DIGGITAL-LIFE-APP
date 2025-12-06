@@ -132,17 +132,16 @@ class _HWAwarenessUploadScreenState extends State<HWAwarenessUploadScreen> {
     final ref = FirebaseStorage.instance.ref().child(
       'awareness_images/${DateTime.now().millisecondsSinceEpoch}_${file.name}',
     );
-    final task = await ref.putFile(File(file.path));
+    await ref.putFile(File(file.path));
     return await ref.getDownloadURL();
   }
 
   Future<String?> _uploadFile(PlatformFile file) async {
     if (file.path == null) return null;
-    final extension = file.extension ?? 'pdf';
     final ref = FirebaseStorage.instance.ref().child(
       'awareness_files/${DateTime.now().millisecondsSinceEpoch}_${file.name}',
     );
-    final task = await ref.putFile(File(file.path!));
+    await ref.putFile(File(file.path!));
     return await ref.getDownloadURL();
   }
 
@@ -465,12 +464,15 @@ class _HWAwarenessUploadScreenState extends State<HWAwarenessUploadScreen> {
                               ),
                             ),
                           ] else ...[
-                            ElevatedButton.icon(
-                              onPressed: _pickFile,
-                              icon: const Icon(Icons.upload_file),
-                              label: const Text('Select PDF or Word Document'),
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 48),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: _pickFile,
+                                icon: const Icon(Icons.upload_file),
+                                label: const Text('Select PDF or Word Document'),
+                                style: ElevatedButton.styleFrom(
+                                  minimumSize: const Size.fromHeight(48),
+                                ),
                               ),
                             ),
                           ],
@@ -529,9 +531,12 @@ class _HWAwarenessUploadScreenState extends State<HWAwarenessUploadScreen> {
                       ),
                     ),
                     const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: _addSymptom,
-                      child: const Text('Add'),
+                    SizedBox(
+                      width: 88,
+                      child: ElevatedButton(
+                        onPressed: _addSymptom,
+                        child: const Text('Add'),
+                      ),
                     ),
                   ],
                 ),
@@ -593,36 +598,42 @@ class _HWAwarenessUploadScreenState extends State<HWAwarenessUploadScreen> {
                   ),
                   const SizedBox(height: 8),
                 ],
-                OutlinedButton.icon(
-                  onPressed: _pickImage,
-                  icon: const Icon(Icons.image),
-                  label: Text(_pickedImage != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty)
-                      ? 'Change Cover Image'
-                      : 'Add Cover Image (optional)'),
-                  style: OutlinedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 48),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: _pickImage,
+                    icon: const Icon(Icons.image),
+                    label: Text(_pickedImage != null || (_existingImageUrl != null && _existingImageUrl!.isNotEmpty)
+                        ? 'Change Cover Image'
+                        : 'Add Cover Image (optional)'),
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(48),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 24),
                 
                 // Submit button
-                ElevatedButton(
-                  onPressed: _loading ? null : _submit,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(double.infinity, 52),
-                    backgroundColor: Theme.of(context).colorScheme.primary,
-                    foregroundColor: Colors.white,
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : _submit,
+                    style: ElevatedButton.styleFrom(
+                      minimumSize: const Size.fromHeight(52),
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: _loading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          )
+                        : Text(
+                            _isEditMode ? 'Update Content' : 'Publish Content',
+                            style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          ),
                   ),
-                  child: _loading
-                      ? const SizedBox(
-                          height: 24,
-                          width: 24,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                        )
-                      : Text(
-                          _isEditMode ? 'Update Content' : 'Publish Content',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                        ),
                 ),
               ],
             ),

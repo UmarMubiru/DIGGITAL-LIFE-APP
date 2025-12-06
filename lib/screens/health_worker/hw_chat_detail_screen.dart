@@ -20,7 +20,6 @@ class _HWChatDetailScreenState extends State<HWChatDetailScreen> {
   final ScrollController _scrollController = ScrollController();
   bool _isSending = false;
   bool _isAccepting = false;
-  ChatRoom? _currentRoom;
 
   @override
   void initState() {
@@ -38,9 +37,8 @@ class _HWChatDetailScreenState extends State<HWChatDetailScreen> {
 
   Future<void> _loadRoom() async {
     final chatProvider = context.read<ChatProvider>();
-    final room = await chatProvider.getChatRoom(widget.roomId);
+    await chatProvider.getChatRoom(widget.roomId);
     if (mounted) {
-      setState(() => _currentRoom = room);
     }
   }
 

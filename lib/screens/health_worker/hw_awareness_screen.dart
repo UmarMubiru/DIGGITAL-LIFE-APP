@@ -30,6 +30,7 @@ class _HWAwarenessScreenState extends State<HWAwarenessScreen> {
         actions: const [HWTopActions()],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'hw_fab_awareness_add',
         onPressed: () => Navigator.pushNamed(context, '/hw/awareness/upload'),
         icon: const Icon(Icons.add),
         label: const Text('Add New'),

@@ -220,6 +220,7 @@ class _LocatorMapScreenState extends State<LocatorMapScreen> {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fab_locator_my_location',
         onPressed: () async {
           final controller = await _controller.future;
           if (provider.userLocation != null) {

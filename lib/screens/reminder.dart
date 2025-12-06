@@ -12,10 +12,6 @@ import 'package:digital_life_care_app/widgets/app_brand.dart';
 class ReminderScreen extends StatelessWidget {
   const ReminderScreen({super.key});
 
-  String _format(Timestamp? t) {
-    if (t == null) return '-';
-    return DateFormat.yMMMd().add_jm().format(t.toDate());
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -215,6 +211,7 @@ class ReminderScreen extends StatelessWidget {
         },
       ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_reminder_add',
         onPressed: () => _showAddDialog(context),
         backgroundColor: Colors.blue,
         child: const Icon(Icons.add),

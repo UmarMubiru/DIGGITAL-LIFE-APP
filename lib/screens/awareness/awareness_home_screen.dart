@@ -157,12 +157,13 @@ class _AwarenessHomeScreenState extends State<AwarenessHomeScreen> {
         title: const Text('Awareness'),
         actions: [TopActions()],
       ),
-      floatingActionButton: user.role == 'health_worker'
+        floatingActionButton: user.role == 'health_worker'
           ? FloatingActionButton(
-              onPressed: () =>
-                  Navigator.pushNamed(context, '/hw/awareness/upload'),
-              child: const Icon(Icons.add),
-            )
+            heroTag: 'fab_awareness_add',
+            onPressed: () =>
+              Navigator.pushNamed(context, '/hw/awareness/upload'),
+            child: const Icon(Icons.add),
+          )
           : null,
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance

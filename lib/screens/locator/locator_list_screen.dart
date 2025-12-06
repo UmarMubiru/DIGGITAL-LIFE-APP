@@ -1,3 +1,5 @@
+// ignore_for_file: unused_element
+
 import 'package:digital_life_care_app/providers/locator_provider.dart';
 import 'package:digital_life_care_app/widgets/top_actions.dart';
 import 'package:digital_life_care_app/widgets/app_brand.dart';
@@ -190,6 +192,7 @@ class _LocatorListScreenState extends State<LocatorListScreen> {
                 ),
               ),
       floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_locator_view_map',
         onPressed: () {
           Navigator.pop(context);
         },
@@ -417,17 +420,20 @@ class _ClinicListCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   // Navigation button - primary action
-                  ElevatedButton.icon(
-                    onPressed: onNavigate,
-                    icon: const Icon(Icons.directions, size: 16),
-                    label: Text('${distance.toStringAsFixed(1)} km', style: const TextStyle(fontSize: 13)),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 8,
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 160),
+                    child: ElevatedButton.icon(
+                      onPressed: onNavigate,
+                      icon: const Icon(Icons.directions, size: 16),
+                      label: Text('${distance.toStringAsFixed(1)} km', style: const TextStyle(fontSize: 13)),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        backgroundColor: Colors.blue,
+                        foregroundColor: Colors.white,
                       ),
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
                     ),
                   ),
                   const SizedBox(width: 8),

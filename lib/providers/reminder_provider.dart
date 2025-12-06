@@ -2,6 +2,8 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest_all.dart' as tz;
 
 class ReminderProvider with ChangeNotifier {
   final FirebaseFirestore _fs = FirebaseFirestore.instance;
@@ -13,8 +15,8 @@ class ReminderProvider with ChangeNotifier {
 
   Future<void> initialize() async {
     if (_initialized) return;
-    // Timezone initialization removed temporarily
-    // tzdata.initializeTimeZones();
+    // Initialize timezone data
+    tz.initializeTimeZones();
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings();
     await _local.initialize(
@@ -49,8 +51,7 @@ class ReminderProvider with ChangeNotifier {
     await _local.show(nid, title, body, details);
   }
 
-  /// Schedule a notification for a future date (simplified without timezone)
-  /// NOTE: This is a simplified version. For production, re-enable timezone packages.
+  /// Schedule a notification for a future date with timezone support
   Future<void> scheduleZonedNotification({
     required String id,
     required String title,
@@ -59,12 +60,6 @@ class ReminderProvider with ChangeNotifier {
   }) async {
     await _ensureInit();
     
-    // Show immediate notification as fallback since we can't schedule without timezone
-    // TODO: Re-enable timezone packages for proper scheduling
-    debugPrint('Warning: Timezone scheduling disabled. Showing immediate notification instead.');
-    await showImmediateNotification(id: id, title: title, body: body);
-    
-    /* Original timezone-based code - re-enable when timezone packages are working:
     final androidDetails = AndroidNotificationDetails(
       'reminders_channel',
       'Reminders',
@@ -76,8 +71,11 @@ class ReminderProvider with ChangeNotifier {
       android: androidDetails,
       iOS: DarwinNotificationDetails(),
     );
+    
+    // Convert DateTime to TZDateTime using local timezone
     final tzDest = tz.TZDateTime.from(scheduledDate, tz.local);
     final nid = id.hashCode & 0x7fffffff;
+    
     await _local.zonedSchedule(
       nid,
       title,
@@ -86,7 +84,6 @@ class ReminderProvider with ChangeNotifier {
       details,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
     );
-    */
   }
 
   /// Schedule a booking notification (wrapper for scheduleZonedNotification)

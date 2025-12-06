@@ -2,7 +2,7 @@
 
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
-import 'dart:math' as math; // Import for pi constant
+// Import for pi constant
 import 'package:digital_life_care_app/providers/chart_data_provider.dart';
 
 class CustomHorizontalBarChart extends StatelessWidget {

@@ -71,16 +71,6 @@ class _HWLocatorScreenState extends State<HWLocatorScreen> {
     }
   }
 
-  void _showClinicDetails(BuildContext context, Clinic clinic) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (context) => _ClinicDetailsSheet(clinic: clinic),
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -349,6 +339,7 @@ class ChoiceChips extends StatelessWidget {
   }
 }
 
+// ignore: unused_element
 class _ClinicDetailsSheet extends StatelessWidget {
   final Clinic clinic;
 

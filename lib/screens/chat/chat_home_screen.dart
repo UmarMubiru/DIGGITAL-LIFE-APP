@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:intl/intl.dart';
 import 'package:digital_life_care_app/providers/chat_provider.dart';
-import 'package:digital_life_care_app/providers/user_provider.dart';
 import 'package:digital_life_care_app/screens/chat/chat_detail_screen.dart';
 
 class ChatHomeScreen extends StatefulWidget {
@@ -101,7 +100,6 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
   @override
   Widget build(BuildContext context) {
     final chatProvider = context.watch<ChatProvider>();
-    final userProvider = context.watch<UserProvider>();
 
     return Scaffold(
       appBar: AppBar(
@@ -200,9 +198,10 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
+        heroTag: 'fab_chat_new',
         onPressed: _isCreatingChat ? null : _showNewChatDialog,
-        icon: _isCreatingChat
+        child: _isCreatingChat
             ? const SizedBox(
                 width: 20,
                 height: 20,
@@ -212,7 +211,6 @@ class _ChatHomeScreenState extends State<ChatHomeScreen> {
                 ),
               )
             : const Icon(Icons.add),
-        label: Text(_isCreatingChat ? 'Creating...' : 'New Chat'),
       ),
     );
   }
