@@ -12,7 +12,6 @@ import 'package:digital_life_care_app/widgets/app_brand.dart';
 class ReminderScreen extends StatelessWidget {
   const ReminderScreen({super.key});
 
-
   @override
   Widget build(BuildContext context) {
     final up = context.watch<UserProvider>();
@@ -37,18 +36,32 @@ class ReminderScreen extends StatelessWidget {
           if (snap.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
-          if (snap.hasError) return Center(child: Text('Error: ${snap.error}'));
+          if (snap.hasError) {
+            return Center(child: Text('Error: ${snap.error}'));
+          }
+
           final docs = snap.data?.docs ?? [];
-          
-          // Filter reminders: only show reminders where scheduledDate is in the future
           final now = DateTime.now();
-          final upcomingReminders = docs.where((doc) {
+
+          // Sort documents in-memory
+          final sortedDocs = List<QueryDocumentSnapshot>.from(docs);
+          sortedDocs.sort((a, b) {
+            final aData = a.data() as Map<String, dynamic>?;
+            final bData = b.data() as Map<String, dynamic>?;
+            final aTime = (aData?['scheduledDate'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+            final bTime = (bData?['scheduledDate'] as Timestamp?)?.millisecondsSinceEpoch ?? 0;
+            return aTime.compareTo(bTime); // ascending order
+          });
+
+          // Filter for upcoming reminders
+          final upcomingReminders = sortedDocs.where((doc) {
             final data = (doc.data() ?? {}) as Map<String, dynamic>;
             final scheduled = data['scheduledDate'] as Timestamp?;
             if (scheduled == null) return false;
-            return scheduled.toDate().isAfter(now) || scheduled.toDate().isAtSameMomentAs(now);
+            return scheduled.toDate().isAfter(now) ||
+                scheduled.toDate().isAtSameMomentAs(now);
           }).toList();
-          
+
           if (upcomingReminders.isEmpty) {
             return Center(
               child: Column(
@@ -69,6 +82,7 @@ class ReminderScreen extends StatelessWidget {
               ),
             );
           }
+
           return ListView.builder(
             padding: const EdgeInsets.all(12),
             itemCount: upcomingReminders.length,
@@ -84,126 +98,206 @@ class ReminderScreen extends StatelessWidget {
               final studentName = (data['studentName'] ?? '') as String?;
               final hwName = (data['hwName'] ?? '') as String?;
               final isBooking = data['type'] == 'booking';
-              
-              // Format date and time separately for better visibility
-              String dateTimeStr = '';
+
+              String dateStr = '';
               String timeStr = '';
               if (scheduled != null) {
                 final dt = scheduled.toDate();
-                dateTimeStr = DateFormat('MMM dd, yyyy').format(dt);
+                dateStr = DateFormat('MMM dd, yyyy').format(dt);
                 timeStr = DateFormat('hh:mm a').format(dt);
               }
-              
-              // Determine who the other party is based on role
-              String otherParty = '';
-              if (role == 'health_worker') {
-                otherParty = studentName ?? '';
-              } else {
-                otherParty = hwName ?? '';
-              }
-              
+
+              String otherParty = role == 'health_worker'
+                  ? (studentName ?? '')
+                  : (hwName ?? '');
+
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 8),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
                 elevation: 3,
-                child: ListTile(
-                  leading: Icon(
-                    isBooking
-                        ? Icons.calendar_month
-                        : Icons.notifications,
-                    size: 32,
-                    color: isBooking 
-                        ? Theme.of(context).colorScheme.primary 
-                        : Colors.orange,
-                  ),
-                  title: Text(
-                    title.toString(),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 16,
+                child: Dismissible(
+                  key: Key(d.id),
+                  direction: DismissDirection.endToStart,
+                  background: Container(
+                    alignment: Alignment.centerRight,
+                    padding: const EdgeInsets.only(right: 20),
+                    decoration: BoxDecoration(
+                      color: Colors.red,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.delete,
+                      color: Colors.white,
+                      size: 32,
                     ),
                   ),
-                  subtitle: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (otherParty.isNotEmpty) ...[
-                        Text(
-                          otherParty,
-                          style: TextStyle(
-                            fontWeight: FontWeight.w500,
-                            color: Colors.grey[700],
-                          ),
+                  confirmDismiss: (direction) async {
+                    return await showDialog<bool>(
+                      context: context,
+                      builder: (ctx) => AlertDialog(
+                        title: const Text('Delete Reminder'),
+                        content: const Text(
+                          'Are you sure you want to delete this reminder?',
                         ),
-                        const SizedBox(height: 4),
-                      ],
-                      Row(
-                        children: [
-                          Icon(Icons.calendar_today, size: 14, color: Colors.grey[600]),
-                          const SizedBox(width: 4),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(ctx, false),
+                            child: const Text('Cancel'),
+                          ),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
+                            onPressed: () => Navigator.pop(ctx, true),
+                            child: const Text('Delete'),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                  onDismissed: (direction) async {
+                    try {
+                      await provider.deleteReminder(d.id);
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Reminder deleted'),
+                          ),
+                        );
+                      }
+                    } catch (e) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text('Error deleting: $e'),
+                            backgroundColor: Colors.red,
+                          ),
+                        );
+                      }
+                    }
+                  },
+                  child: ListTile(
+                    leading: Icon(
+                      isBooking ? Icons.calendar_month : Icons.notifications,
+                      size: 32,
+                      color: isBooking
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.orange,
+                    ),
+                    title: Text(
+                      title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (otherParty.isNotEmpty) ...[
                           Text(
-                            dateTimeStr,
+                            otherParty,
                             style: TextStyle(
-                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
                               color: Colors.grey[700],
                             ),
                           ),
-                          const SizedBox(width: 12),
-                          Icon(Icons.access_time, size: 14, color: Colors.grey[600]),
-                          const SizedBox(width: 4),
-                          Text(
-                            timeStr,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[700],
+                          const SizedBox(height: 4),
+                        ],
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              dateStr,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Icon(
+                              Icons.access_time,
+                              size: 14,
+                              color: Colors.grey[600],
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              timeStr,
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Swipe left to delete',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey[500],
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
+                    ),
+                    trailing: SizedBox(
+                      width: 80,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (!read)
+                            Container(
+                              width: 12,
+                              height: 12,
+                              decoration: const BoxDecoration(
+                                color: Colors.red,
+                                shape: BoxShape.circle,
+                              ),
+                            )
+                          else
+                            const SizedBox(height: 12),
+                          const SizedBox(height: 4),
+                          TextButton(
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              minimumSize: const Size(60, 30),
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            onPressed: () async {
+                              await provider.markRead(d.id);
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Marked read')),
+                                );
+                              }
+                            },
+                            child: const Text(
+                              'Read',
+                              style: TextStyle(fontSize: 12),
                             ),
                           ),
                         ],
                       ),
-                    ],
+                    ),
+                    isThreeLine: true,
+                    onTap: () {
+                      if (isBooking) {
+                        Navigator.pushNamed(context, '/booking', arguments: d.id);
+                      }
+                    },
                   ),
-                  trailing: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (!read)
-                        Container(
-                          padding: const EdgeInsets.all(8),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.circle,
-                            size: 8,
-                            color: Colors.white,
-                          ),
-                        ),
-                      const SizedBox(height: 4),
-                      TextButton(
-                        onPressed: () async {
-                          await provider.markRead(d.id);
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Marked read')),
-                            );
-                          }
-                        },
-                        child: const Text('Read'),
-                      ),
-                    ],
-                  ),
-                  isThreeLine: true,
-                  onTap: () {
-                    // open detail or navigate to booking/chat based on type
-                    final type = (data['type'] ?? 'booking').toString();
-                    if (type == 'booking') {
-                      // go to booking details/requests - route name depends on your app
-                      Navigator.pushNamed(context, '/booking', arguments: d.id);
-                    } else {
-                      // awareness or generic - show details if needed
-                    }
-                  },
                 ),
               );
             },
@@ -276,12 +370,6 @@ class ReminderScreen extends StatelessWidget {
           ),
           actions: [
             ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
               onPressed: () async {
                 final title = titleCtrl.text.trim();
                 if (title.isEmpty) return;
@@ -304,7 +392,6 @@ class ReminderScreen extends StatelessWidget {
                   title: title,
                   scheduledDate: combinedDateTime,
                 );
-                // ignore: use_build_context_synchronously
                 Navigator.pop(ctx, true);
               },
               child: const Text('Save'),

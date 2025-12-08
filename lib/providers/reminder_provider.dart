@@ -59,7 +59,7 @@ class ReminderProvider with ChangeNotifier {
     required DateTime scheduledDate,
   }) async {
     await _ensureInit();
-    
+
     final androidDetails = AndroidNotificationDetails(
       'reminders_channel',
       'Reminders',
@@ -71,11 +71,11 @@ class ReminderProvider with ChangeNotifier {
       android: androidDetails,
       iOS: DarwinNotificationDetails(),
     );
-    
+
     // Convert DateTime to TZDateTime using local timezone
     final tzDest = tz.TZDateTime.from(scheduledDate, tz.local);
     final nid = id.hashCode & 0x7fffffff;
-    
+
     await _local.zonedSchedule(
       nid,
       title,
@@ -102,26 +102,31 @@ class ReminderProvider with ChangeNotifier {
   }
 
   /// Stream reminders for either a student or a health worker
+  /// FIXED: Removed orderBy to avoid composite index requirement
   Stream<QuerySnapshot> streamRemindersForUser({
     required String uid,
     required String role,
   }) {
     final col = _fs.collection('reminders');
     if (role == 'health_worker') {
-      return col
-          .where('hwId', isEqualTo: uid)
-          .orderBy('scheduledDate', descending: false)
-          .snapshots();
+      return col.where('hwId', isEqualTo: uid).snapshots();
     } else {
-      return col
-          .where('studentId', isEqualTo: uid)
-          .orderBy('scheduledDate', descending: false)
-          .snapshots();
+      return col.where('studentId', isEqualTo: uid).snapshots();
     }
   }
 
   Future<void> markRead(String reminderId) async {
     await _fs.collection('reminders').doc(reminderId).update({'read': true});
+  }
+
+  /// Delete a reminder from Firestore and cancel its notification
+  Future<void> deleteReminder(String reminderId) async {
+    // Cancel the scheduled notification
+    final nid = reminderId.hashCode & 0x7fffffff;
+    await _local.cancel(nid);
+
+    // Delete from Firestore
+    await _fs.collection('reminders').doc(reminderId).delete();
   }
 
   /// Create a new reminder in Firestore and schedule a notification
